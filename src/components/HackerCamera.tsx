@@ -44,6 +44,16 @@ export default function HackerCamera() {
     return () => clearInterval(interval);
   }, [cameraState, isVirtual]);
 
+  // Attach stream to video element when it mounts
+  useEffect(() => {
+    if (videoRef.current && stream && cameraState === "active" && !isVirtual) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.onloadedmetadata = () => {
+        videoRef.current?.play();
+      };
+    }
+  }, [stream, cameraState, isVirtual]);
+
   // Virtual Biometric Face Scanner Animation Loop
   useEffect(() => {
     if (!isVirtual || cameraState !== "active" || !virtualCanvasRef.current) return;
@@ -234,13 +244,7 @@ export default function HackerCamera() {
       });
 
       setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current?.play();
-          setCameraState("active");
-        };
-      }
+      setCameraState("active");
     } catch (err: any) {
       console.error("Camera access error, falling back to virtual simulator:", err);
       // Instead of failing completely, smoothly launch the simulated virtual biometric feed!
@@ -458,6 +462,21 @@ export default function HackerCamera() {
     document.body.removeChild(downloadLink);
   };
 
+  // CSS Filters for live feed
+  const getFilterStyle = (filter: string) => {
+    switch (filter) {
+      case "cyber":
+        return { filter: "grayscale(100%) sepia(100%) hue-rotate(320deg) saturate(400%) contrast(120%)" };
+      case "matrix":
+        return { filter: "grayscale(100%) sepia(100%) hue-rotate(70deg) saturate(400%) contrast(120%)" };
+      case "thermal":
+        // A rough simulation of thermal camera using color inversion and hue shift
+        return { filter: "invert(100%) sepia(100%) hue-rotate(130deg) saturate(500%) contrast(150%) brightness(120%)" };
+      default:
+        return {};
+    }
+  };
+
   return (
     <section id="hacker-cam" className="py-20 bg-black border-t-8 border-brand-red text-white flex flex-col items-center">
       <div className="w-full max-w-6xl px-4 flex flex-col animate-fadeIn">
@@ -572,6 +591,7 @@ export default function HackerCamera() {
                       muted
                       autoPlay
                       className="absolute inset-0 w-full h-full object-cover scale-x-[-1]"
+                      style={getFilterStyle(activeFilter)}
                     />
                     
                     {/* Cyber overlay elements */}
@@ -607,6 +627,7 @@ export default function HackerCamera() {
                     <canvas
                       ref={virtualCanvasRef}
                       className="absolute inset-0 w-full h-full object-cover"
+                      style={getFilterStyle(activeFilter)}
                     />
 
                     {/* Cyber overlay elements duplication for design parity */}
