@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Target, Zap } from 'lucide-react';
+import FullscreenBtn from './FullscreenBtn';
+import { playSound } from '../utils/audio';
 
 export default function ZeroDayBreach() {
+  const containerRef = useRef<HTMLDivElement>(null);
   const [gameState, setGameState] = useState<'idle' | 'waiting' | 'ready' | 'done'>('idle');
   const [startTime, setStartTime] = useState(0);
   const [reactionTime, setReactionTime] = useState<number | null>(null);
@@ -29,16 +32,19 @@ export default function ZeroDayBreach() {
       setGameState('done');
       setMessage('TOO EARLY! CONNECTION TRACED. TRY AGAIN.');
       setReactionTime(null);
+      playSound('lose');
     } else if (gameState === 'ready') {
       const time = Date.now() - startTime;
       setReactionTime(time);
       setGameState('done');
       setMessage(time < 250 ? 'GHOST IN THE MACHINE' : 'BREACH SUCCESSFUL');
+      playSound(time < 250 ? 'win' : 'hit');
     }
   };
 
   return (
-    <section className="py-20 bg-black font-mono text-white border-y-2 border-brand-red relative overflow-hidden flex flex-col items-center justify-center min-h-[400px]">
+    <section ref={containerRef} className="py-20 bg-black font-mono text-white border-y-2 border-brand-red relative overflow-hidden flex flex-col items-center justify-center min-h-[400px]">
+      <FullscreenBtn targetRef={containerRef} />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,0,0,0.1)_0,transparent_60%)] pointer-events-none" />
       
       <div className="z-10 text-center max-w-2xl px-6">

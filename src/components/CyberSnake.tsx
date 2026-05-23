@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import { Maximize2, Minimize2, Play, RotateCcw, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Skull } from "lucide-react";
+import FullscreenBtn from "./FullscreenBtn";
 import { soundEngine } from '../utils/audio';
 
 const GRID_SIZE = 25;
@@ -47,13 +48,13 @@ export default function CyberSnake() {
     const handleKeyDown = (e: KeyboardEvent) => {
       switch (e.key) {
         case "ArrowUp":
-        case "w": changeDir(0, -1); break;
+        case "w": e.preventDefault(); changeDir(0, -1); break;
         case "ArrowDown":
-        case "s": changeDir(0, 1); break;
+        case "s": e.preventDefault(); changeDir(0, 1); break;
         case "ArrowLeft":
-        case "a": changeDir(-1, 0); break;
+        case "a": e.preventDefault(); changeDir(-1, 0); break;
         case "ArrowRight":
-        case "d": changeDir(1, 0); break;
+        case "d": e.preventDefault(); changeDir(1, 0); break;
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -193,7 +194,8 @@ export default function CyberSnake() {
   }, [gameState]);
 
   return (
-    <section className="py-20 bg-black font-mono text-white flex flex-col items-center justify-center border-t-2 border-green-900 border-b border-neutral-900">
+    <section ref={containerRef} className="relative py-20 bg-black font-mono text-white flex flex-col items-center justify-center border-t-2 border-green-900 border-b border-neutral-900">
+      <FullscreenBtn targetRef={containerRef} />
       <div className="w-full max-w-5xl px-4 flex flex-col items-center">
         
         <div className="text-center mb-8">

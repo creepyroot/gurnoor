@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useAnimation } from 'motion/react';
 import { Crosshair, ShieldAlert, Cpu, AlertCircle, Zap } from 'lucide-react';
+import FullscreenBtn from './FullscreenBtn';
 import { soundEngine } from '../utils/audio';
 
 export default function PayloadInjector() {
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [sliderPosition, setSliderPosition] = useState(0);
   const [direction, setDirection] = useState(1);
@@ -91,7 +93,8 @@ export default function PayloadInjector() {
   };
 
   return (
-    <section className="py-20 bg-neutral-950 font-mono text-white border-y-2 border-brand-red relative overflow-hidden">
+    <section ref={containerRef} className="py-20 bg-neutral-950 font-mono text-white border-y-2 border-brand-red relative overflow-hidden">
+      <FullscreenBtn targetRef={containerRef} />
       {/* Background Grid */}
       <div className="absolute inset-0 opacity-10 pointer-events-none" 
            style={{ backgroundImage: 'linear-gradient(rgba(255, 0, 0, 0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 0, 0, 0.5) 1px, transparent 1px)', backgroundSize: '50px 50px' }}>

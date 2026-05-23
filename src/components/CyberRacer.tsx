@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import { Maximize2, Minimize2, Play, RotateCcw, ChevronLeft, ChevronRight, ShieldAlert } from "lucide-react";
+import FullscreenBtn from "./FullscreenBtn";
 import { soundEngine } from "../utils/audio";
 
 const CANVAS_WIDTH = 800;
@@ -86,8 +87,8 @@ export default function CyberRacer() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (gameState !== "playing") return;
-      if (e.key === "ArrowLeft" || e.key === "a") changeLane(-1);
-      if (e.key === "ArrowRight" || e.key === "d") changeLane(1);
+      if (e.key === "ArrowLeft" || e.key === "a") { e.preventDefault(); changeLane(-1); }
+      if (e.key === "ArrowRight" || e.key === "d") { e.preventDefault(); changeLane(1); }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -363,7 +364,8 @@ export default function CyberRacer() {
   }, [gameState]);
 
   return (
-    <section className="py-20 bg-black font-mono text-white flex flex-col items-center justify-center border-t border-neutral-900 border-b-4 border-cyan-500">
+    <section ref={containerRef} className="relative py-20 bg-black font-mono text-white flex flex-col items-center justify-center border-t border-neutral-900 border-b-4 border-cyan-500">
+      <FullscreenBtn targetRef={containerRef} />
       <div className="w-full max-w-5xl px-4 flex flex-col items-center">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 text-cyan-500 text-xs font-black tracking-widest mb-2 border border-cyan-500/30 px-3 py-1 rounded bg-cyan-500/10">

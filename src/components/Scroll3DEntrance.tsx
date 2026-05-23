@@ -12,7 +12,7 @@ export default function Scroll3DEntrance({ children, className = "" }: Scroll3DE
 
   useEffect(() => {
     const checkScreen = () => {
-      setIsMobile(window.innerWidth < 768);
+      setIsMobile(window.innerWidth < 1024);
     };
     checkScreen();
     window.addEventListener("resize", checkScreen);
@@ -29,20 +29,30 @@ export default function Scroll3DEntrance({ children, className = "" }: Scroll3DE
 
   // Balanced responsive spring engine: ultra-fast lock-on with zero lag
   const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 280,
-    damping: 32,
-    mass: 0.3,
-    restDelta: 0.0001,
+    stiffness: 180,
+    damping: 26,
+    mass: 0.2,
+    restDelta: 0.001,
   });
 
-  // Elegant front-coming 3D parallax offsets.
-  // We use values designed to look premium but avoid layout breaking, huge memory overhead, or overlap.
-  const scale = useTransform(smoothProgress, [0, 1], [isMobile ? 1.05 : 1.12, 1]);
-  const rotateX = useTransform(smoothProgress, [0, 1], [isMobile ? -4 : -10, 0]);
-  const translateZ = useTransform(smoothProgress, [0, 1], [isMobile ? 30 : 80, 0]);
-  const y = useTransform(smoothProgress, [0, 1], [isMobile ? 15 : 40, 0]);
-  const opacity = useTransform(smoothProgress, [0, 0.6], [0, 1]);
+  // Elegant front-coming subtle 2.5D parallax offsets.
+  // Highly optimized values prevent rendering bottlenecks and scrolling stutters on all machines.
+  const scale = useTransform(smoothProgress, [0, 1], [isMobile ? 1.01 : 1.03, 1]);
+  const rotateX = useTransform(smoothProgress, [0, 1], [isMobile ? -1 : -3, 0]);
+  const translateZ = useTransform(smoothProgress, [0, 1], [isMobile ? 10 : 25, 0]);
+  const y = useTransform(smoothProgress, [0, 1], [isMobile ? 10 : 20, 0]);
+  const opacity = useTransform(smoothProgress, [0, 0.45], [0, 1]);
   const pointerEvents = useTransform(smoothProgress, (val) => (val < 0.2 ? "none" : "auto"));
+
+  // On mobile frames or touch-based screen widths, render the children directly with static layout.
+  // This avoids scroll-frame sync errors in embeds, saving performance and preventing elements from remaining invisible.
+  if (isMobile) {
+    return (
+      <div id="static-mobile-contain" className={`w-full py-4 px-2 md:py-6 overflow-visible ${className}`}>
+        {children}
+      </div>
+    );
+  }
 
   return (
     <div 

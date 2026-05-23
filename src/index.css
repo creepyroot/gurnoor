@@ -49,6 +49,27 @@
   .border-cyber-glow {
     box-shadow: 0 0 20px rgba(255, 215, 0, 0.25);
   }
+
+  @keyframes textGlitch {
+    0% { transform: translate(0) }
+    20% { transform: translate(-3px, 3px) }
+    40% { transform: translate(-3px, -3px) }
+    60% { transform: translate(3px, 3px) }
+    80% { transform: translate(3px, -3px) }
+    100% { transform: translate(0) }
+  }
+  .animate-glitch {
+    animation: textGlitch 0.2s cubic-bezier(.25, .46, .45, .94) both infinite;
+  }
+
+  @keyframes laserSweep {
+    0% { transform: translateY(-10vh); opacity: 0.9; }
+    50% { opacity: 1; }
+    100% { transform: translateY(110vh); opacity: 0; }
+  }
+  .animate-laser-sweep {
+    animation: laserSweep 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
 }
 
 /* Custom scrollbar */
@@ -70,5 +91,4 @@ html, body {
   background-color: #000;
   color: #fff;
   overflow-x: hidden;
-  scroll-behavior: smooth;
 }

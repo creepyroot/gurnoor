@@ -13,8 +13,30 @@ import NeonDefender from "./components/NeonDefender";
 import CyberSnake from "./components/CyberSnake";
 import CyberRacer from "./components/CyberRacer";
 import ZeroDayBreach from "./components/ZeroDayBreach";
+import MemoryGrid from "./components/MemoryGrid";
+import NeonPong from "./components/NeonPong";
+import TerminalTyper from "./components/TerminalTyper";
+import CyberClicker from "./components/CyberClicker";
+import NeonRunner from "./components/NeonRunner";
+import DataBreaker from "./components/DataBreaker";
 import { Shield, Activity, Terminal, ArrowUp, Menu, X, Cpu, ChevronDown } from "lucide-react";
 import { portfolioData } from "./data/portfolioData";
+import { playSound } from "./utils/audio";
+
+export const ARCADE_GAMES = [
+  { id: "zero-day", label: "Zero-Day Breach", color: "hover:text-brand-red text-[#ff3333]" },
+  { id: "hacker-cam", label: "Hacker Camera", color: "hover:text-brand-red text-[#ff3333]" },
+  { id: "cyber-racer", label: "Cyber Racer", color: "hover:text-brand-red text-[#ff3333]" },
+  { id: "payload-injector", label: "Payload Injector", color: "hover:text-brand-red text-[#ff3333]" },
+  { id: "neon-defender", label: "Neon Defender", color: "hover:text-brand-red text-[#ffbb00]" },
+  { id: "cyber-snake", label: "Cyber Snake", color: "hover:text-brand-yellow text-brand-yellow" },
+  { id: "memory-grid", label: "Memory Matrix", color: "hover:text-cyan-400 text-cyan-400" },
+  { id: "neon-pong", label: "Neon Pong", color: "hover:text-pink-500 text-pink-500" },
+  { id: "terminal-typer", label: "Terminal Typer", color: "hover:text-cyan-500 text-cyan-500" },
+  { id: "cyber-clicker", label: "Cyber Clicker", color: "hover:text-brand-yellow text-brand-yellow" },
+  { id: "neon-runner", label: "Neon Runner", color: "hover:text-fuchsia-500 text-fuchsia-400" },
+  { id: "data-breaker", label: "Data Breaker", color: "hover:text-[#00FFFF] text-[#00FFFF]" }
+];
 
 function GamesPreviewSection({ onNavigate }: { onNavigate: () => void }) {
   return (
@@ -24,8 +46,8 @@ function GamesPreviewSection({ onNavigate }: { onNavigate: () => void }) {
         <h2 className="text-4xl md:text-6xl font-black text-white uppercase drop-shadow-[5px_5px_0px_#FF0000] mb-8 font-display italic">
           Interactive <span className="text-brand-red">Exploits</span>
         </h2>
-        <p className="text-neutral-400 font-mono text-sm mb-12 uppercase tracking-widest max-w-2xl mx-auto border-l-4 border-r-4 border-brand-red px-4 py-2 bg-black/50">
-          Access the Cyber Arcade to test your reflexes and problem solving against simulated corporate ICE security nodes. Six active payloads waiting for injection.
+         <p className="text-neutral-400 font-mono text-sm mb-12 uppercase tracking-widest max-w-2xl mx-auto border-l-4 border-r-4 border-brand-red px-4 py-2 bg-black/50">
+          Access the Cyber Arcade to test your reflexes and problem solving against simulated corporate ICE security nodes. Twelve active payloads waiting for injection.
         </p>
         <button 
            onClick={() => { window.scrollTo(0,0); onNavigate(); }}
@@ -47,8 +69,29 @@ export default function App() {
   const [isDesktop, setIsDesktop] = useState(false);
   const [currentPage, setCurrentPage] = useState<'home' | 'games'>('home');
 
-  // Anti-Inspect Security Measures
+  const [showIntro, setShowIntro] = useState(true);
+  const [introFade, setIntroFade] = useState(false);
+  const [appEntrance, setAppEntrance] = useState(false);
+  const [hudWipe, setHudWipe] = useState(false);
+
+  // Anti-Inspect Security Measures & Intro Animation Control
   useEffect(() => {
+    // Start fading out the loader
+    const fadeTimer = setTimeout(() => {
+      setIntroFade(true);
+    }, 2200);
+
+    // Completely remove the loader layer and trigger the main content's slide-up entrance
+    const removeTimer = setTimeout(() => {
+      setShowIntro(false);
+      setAppEntrance(true);
+      playSound('win');
+      setHudWipe(true);
+      setTimeout(() => {
+        setHudWipe(false);
+      }, 1500);
+    }, 2900);
+
     // Basic anti-inspect script
     const handleContextMenu = (e: MouseEvent) => {
       e.preventDefault();
@@ -129,9 +172,61 @@ export default function App() {
     { label: "CONNECT", target: "#contact" }
   ];
 
+  const selectGame = (anchor: string) => {
+    setCurrentPage('games');
+    setGamesDropdownOpen(false);
+    setMobileMenuOpen(false);
+    setTimeout(() => {
+      const el = document.getElementById(anchor);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        window.location.hash = `#${anchor}`;
+      }
+    }, 150);
+  };
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    if (!gamesDropdownOpen) return;
+    const clickOutside = () => {
+      setGamesDropdownOpen(false);
+    };
+    window.addEventListener('click', clickOutside);
+    return () => window.removeEventListener('click', clickOutside);
+  }, [gamesDropdownOpen]);
+
   return (
     <div className="relative min-h-screen bg-black text-white font-sans selection:bg-brand-red selection:text-black select-none">
       
+      {/* Intro Animation Layer */}
+      {showIntro && (
+        <div className={`fixed inset-0 z-[100] bg-black flex items-center justify-center pointer-events-none transition-all duration-[800ms] cubic-bezier(0.16, 1, 0.3, 1) ${
+          introFade ? 'opacity-0 scale-110 blur-xl' : 'opacity-100 scale-100 blur-none'
+        }`}>
+          <div className="text-center font-display font-black text-5xl md:text-8xl uppercase tracking-tighter" style={{ textShadow: "4px 4px 0px #FF0000, -4px -4px 0px #00FFFF" }}>
+             <span className="relative inline-block animate-glitch">GURNOOR</span>
+             <br />
+             <span className="relative inline-block text-brand-yellow animate-glitch" style={{ animationDelay: '0.1s' }}>SINGH</span>
+             <div className="mt-8 text-sm md:text-xl font-mono text-cyan-400 tracking-widest text-glow-cyan animate-pulse">INITIALIZING SECURE TERMINAL...</div>
+          </div>
+        </div>
+      )}
+
+      {/* Glitch HUD Scan Laser Wipe Animation */}
+      {hudWipe && (
+        <div className="fixed inset-0 z-[101] pointer-events-none overflow-hidden">
+          {/* Laser Sweep Bar */}
+          <div className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-brand-yellow to-transparent shadow-[0_0_20px_#FFD700] animate-laser-sweep" />
+          <div className="absolute inset-0 bg-brand-red/5 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.15)_50%)] bg-[length:100%_4px] opacity-10" />
+        </div>
+      )}
+
+      {/* Main App Content Revealed with Cinematic Entrance Zoom and Blur Dissolve */}
+      <div className={`transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) ${
+        appEntrance ? 'opacity-100 translate-y-0 scale-100 filter-none' : 'opacity-0 translate-y-8 scale-98 blur-[6px] pointer-events-none'
+      }`}>
+
       {/* 1. Custom Floating HUD Target Pointer (Desktop Only) */}
       {isDesktop && (
         <div 
@@ -184,25 +279,29 @@ export default function App() {
               HOME
             </button>
             <div 
-              className="relative group"
-              onMouseEnter={() => setGamesDropdownOpen(true)}
-              onMouseLeave={() => setGamesDropdownOpen(false)}
+              className="relative"
             >
               <button 
-                onClick={() => { setCurrentPage('games'); window.scrollTo(0,0); }}
-                className="flex items-center gap-1 px-3 py-1.5 text-brand-red hover:text-brand-yellow transition-colors rounded uppercase border border-transparent hover:border-red-900 bg-red-950/20"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setGamesDropdownOpen(!gamesDropdownOpen);
+                }}
+                className="flex items-center gap-1 px-3 py-1.5 text-brand-red hover:text-yellow-400 font-black transition-all rounded uppercase border border-neutral-900/70 hover:border-red-900 bg-red-950/20"
               >
-                GAMES ARCADE <ChevronDown className="w-3 h-3" />
+                GAMES ARCADE <ChevronDown className={`w-3 h-3 transition-transform ${gamesDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
               {/* Dropdown Menu */}
               {gamesDropdownOpen && (
-                <div className="absolute top-10 right-0 w-56 bg-black border-2 border-brand-red rounded shadow-[6px_6px_0px_rgba(255,0,0,0.3)] z-50 flex flex-col py-2">
-                   <button onClick={() => { setCurrentPage('games'); setTimeout(()=>window.location.hash='#zero-day', 100); }} className="text-left px-4 py-2 hover:bg-neutral-900 border-b border-neutral-900 text-white font-black hover:text-brand-red uppercase">Zero-Day Breach</button>
-                   <button onClick={() => { setCurrentPage('games'); setTimeout(()=>window.location.hash='#hacker-cam', 100); }} className="text-left px-4 py-2 hover:bg-neutral-900 border-b border-neutral-900 text-white font-black hover:text-brand-red uppercase">Hacker Camera</button>
-                   <button onClick={() => { setCurrentPage('games'); setTimeout(()=>window.location.hash='#cyber-racer', 100); }} className="text-left px-4 py-2 hover:bg-neutral-900 border-b border-neutral-900 text-white font-black hover:text-brand-red uppercase">Cyber Racer</button>
-                   <button onClick={() => { setCurrentPage('games'); setTimeout(()=>window.location.hash='#payload-injector', 100); }} className="text-left px-4 py-2 hover:bg-neutral-900 border-b border-neutral-900 text-white font-black hover:text-brand-red uppercase">Payload Injector</button>
-                   <button onClick={() => { setCurrentPage('games'); setTimeout(()=>window.location.hash='#neon-defender', 100); }} className="text-left px-4 py-2 hover:bg-neutral-900 border-b border-neutral-900 text-white font-black hover:text-brand-red uppercase">Neon Defender</button>
-                   <button onClick={() => { setCurrentPage('games'); setTimeout(()=>window.location.hash='#cyber-snake', 100); }} className="text-left px-4 py-2 hover:bg-neutral-900 text-white font-black hover:text-brand-red uppercase">Cyber Snake</button>
+                <div className="absolute top-10 right-0 w-56 bg-black border-2 border-brand-red rounded shadow-[6px_6px_0px_rgba(255,0,0,0.4)] z-50 flex flex-col py-1.5 animate-fadeIn">
+                   {ARCADE_GAMES.map((game) => (
+                     <button 
+                       key={game.id}
+                       onClick={() => selectGame(game.id)} 
+                       className={`text-left px-4 py-2.5 hover:bg-neutral-900/60 border-b border-neutral-900/30 text-xs font-black transition-all uppercase ${game.color}`}
+                     >
+                       {game.label}
+                     </button>
+                   ))}
                 </div>
               )}
             </div>
@@ -255,8 +354,19 @@ export default function App() {
                onClick={() => { setCurrentPage('games'); setMobileMenuOpen(false); window.scrollTo(0,0); }}
                className="text-brand-red border border-brand-red bg-red-950/20 py-3 rounded hover:bg-brand-red hover:text-black uppercase transition-colors"
             >
-              GAMES ARCADE
+              GAMES ARCADE MAIN
             </button>
+            <div className="flex flex-col text-sm space-y-4 border-l-2 border-brand-red pl-4 text-left">
+               {ARCADE_GAMES.map((game) => (
+                 <button 
+                   key={game.id} 
+                   onClick={() => selectGame(game.id)}
+                   className="text-left font-black tracking-widest hover:text-brand-yellow uppercase text-xs text-neutral-300 py-1"
+                 >
+                   {game.label}
+                 </button>
+               ))}
+            </div>
             {currentPage === 'home' && navLinks.map((link) => (
               <a
                 key={link.label}
@@ -304,6 +414,12 @@ export default function App() {
             <div id="payload-injector"><PayloadInjector /></div>
             <div id="neon-defender"><NeonDefender /></div>
             <div id="cyber-snake"><CyberSnake /></div>
+            <div id="memory-grid"><MemoryGrid /></div>
+            <div id="neon-pong"><NeonPong /></div>
+            <div id="terminal-typer"><TerminalTyper /></div>
+            <div id="cyber-clicker"><CyberClicker /></div>
+            <div id="neon-runner"><NeonRunner /></div>
+            <div id="data-breaker"><DataBreaker /></div>
           </div>
         )}
       </main>
@@ -342,6 +458,7 @@ export default function App() {
         </button>
       )}
 
+      </div> {/* Close Main App Content Revealed */}
     </div>
   );
 }

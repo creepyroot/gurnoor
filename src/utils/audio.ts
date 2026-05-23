@@ -1,98 +1,119 @@
-class SoundEngine {
-  ctx: AudioContext | null = null;
-  masterGain: GainNode | null = null;
-
-  init() {
-    if (this.ctx) return;
-    try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      this.ctx = new AudioCtx();
-      this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.value = 0.3; // Global volume
-      this.masterGain.connect(this.ctx.destination);
-    } catch (e) {
-      console.warn("AudioContext not supported");
-    }
+let audioCtx: AudioContext | null = null;
+const getCtx = () => {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
   }
-
-  playTone(freq: number, type: OscillatorType, duration: number, vol = 1) {
-    if (!this.ctx || !this.masterGain) return;
-    try {
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-        
-        gain.gain.setValueAtTime(vol, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
-
-        osc.connect(gain);
-        gain.connect(this.masterGain);
-
-        osc.start();
-        osc.stop(this.ctx.currentTime + duration);
-    } catch (e) {}
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
   }
+  return audioCtx;
+};
 
-  shoot() {
-    this.init();
-    if (!this.ctx) return;
-    this.playTone(800, 'square', 0.1, 0.5);
-    setTimeout(() => this.playTone(600, 'square', 0.1, 0.5), 50);
-  }
-
-  explosion() {
-    this.init();
-    if (!this.ctx || !this.masterGain) return;
+export const playSound = (type: 'beep' | 'shoot' | 'explosion' | 'win' | 'lose' | 'hit') => {
+  try {
+    const ctx = getCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
     
+    const t = ctx.currentTime;
+    
+    if (type === 'beep') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, t);
+      osc.frequency.exponentialRampToValueAtTime(880, t + 0.1);
+      gain.gain.setValueAtTime(0.1, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+      osc.start(t);
+      osc.stop(t + 0.1);
+    } else if (type === 'shoot') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(880, t);
+      osc.frequency.exponentialRampToValueAtTime(110, t + 0.1);
+      gain.gain.setValueAtTime(0.1, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+      osc.start(t);
+      osc.stop(t + 0.1);
+    } else if (type === 'explosion') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(100, t);
+      osc.frequency.exponentialRampToValueAtTime(0.01, t + 0.3);
+      gain.gain.setValueAtTime(0.2, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+      osc.start(t);
+      osc.stop(t + 0.3);
+    } else if (type === 'win') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(440, t);
+      osc.frequency.setValueAtTime(554.37, t + 0.1);
+      osc.frequency.setValueAtTime(659.25, t + 0.2);
+      osc.frequency.setValueAtTime(880, t + 0.3);
+      gain.gain.setValueAtTime(0.1, t);
+      gain.gain.linearRampToValueAtTime(0, t + 0.5);
+      osc.start(t);
+      osc.stop(t + 0.5);
+    } else if (type === 'lose') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(300, t);
+      osc.frequency.exponentialRampToValueAtTime(50, t + 0.5);
+      gain.gain.setValueAtTime(0.1, t);
+      gain.gain.linearRampToValueAtTime(0, t + 0.5);
+      osc.start(t);
+      osc.stop(t + 0.5);
+    } else if (type === 'hit') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(150, t);
+      osc.frequency.exponentialRampToValueAtTime(50, t + 0.1);
+      gain.gain.setValueAtTime(0.1, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+      osc.start(t);
+      osc.stop(t + 0.1);
+    }
+  } catch (e) {
+    console.log("Audio not supported or disabled");
+  }
+};
+
+export const soundEngine = {
+  error: () => playSound('lose'),
+  eat: () => playSound('beep'),
+  success: () => playSound('win'),
+  explosion: () => playSound('explosion'),
+  shoot: () => playSound('shoot'),
+  playTone: (freq: number, type: any, dur: number, vol: number) => {
     try {
-        const bufferSize = this.ctx.sampleRate * 0.5; // 0.5 seconds
-        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        
-        for (let i = 0; i < bufferSize; i++) {
-            data[i] = Math.random() * 2 - 1; // White noise
-        }
-
-        const noiseSource = this.ctx.createBufferSource();
-        noiseSource.buffer = buffer;
-
-        const filter = this.ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(1000, this.ctx.currentTime);
-        filter.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.5);
-
-        const gain = this.ctx.createGain();
-        gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.5);
-
-        noiseSource.connect(filter);
-        filter.connect(gain);
-        gain.connect(this.masterGain);
-
-        noiseSource.start();
-    } catch (e) {}
+      const ctx = getCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      gain.gain.setValueAtTime(vol, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + dur);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + dur);
+    } catch {}
   }
+};
 
-  eat() {
-    this.init();
-    this.playTone(1200, 'sine', 0.1, 0.8);
-    setTimeout(() => this.playTone(1600, 'sine', 0.15, 0.8), 50);
-  }
+// Auto unlock WebAudio on mobile browsers on first interaction
+export const unlockAudio = () => {
+  try {
+    const ctx = getCtx();
+    if (ctx && ctx.state === "suspended") {
+      ctx.resume().catch(() => {});
+    }
+  } catch (err) {}
+};
 
-  error() {
-    this.init();
-    this.playTone(200, 'sawtooth', 0.3, 1);
-    setTimeout(() => this.playTone(150, 'sawtooth', 0.4, 1), 150);
-  }
-
-  success() {
-    this.init();
-    this.playTone(400, 'sine', 0.1);
-    setTimeout(() => this.playTone(500, 'sine', 0.1), 100);
-    setTimeout(() => this.playTone(600, 'sine', 0.2), 200);
-  }
+if (typeof window !== "undefined") {
+  const unlock = () => {
+    unlockAudio();
+    window.removeEventListener("click", unlock);
+    window.removeEventListener("touchstart", unlock);
+  };
+  window.addEventListener("click", unlock, { passive: true });
+  window.addEventListener("touchstart", unlock, { passive: true });
 }
-
-export const soundEngine = new SoundEngine();

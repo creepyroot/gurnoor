@@ -1,26 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
-import { motion } from "motion/react";
+import { motion, useScroll, useTransform } from "motion/react";
 import { Shield, Cpu, Activity, Clock, Terminal } from "lucide-react";
 import { portfolioData } from "../data/portfolioData";
 
 export default function HeroSection() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [scrollY, setScrollY] = useState(0);
   const [threatLevel, setThreatLevel] = useState("SECURE");
   const [systemAlerts, setSystemAlerts] = useState<string[]>([
     "INITIALIZING COGNITIVE INTERFACE...",
     "SECURE SHELL ESTABLISHED AT NEW DELHI",
     "POLYMATH BRAINWAVES SYNCHRONIZED",
   ]);
-
-  // Handle scroll for parallax layer transformation
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrollY(window.scrollY);
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   // Matrix-style falling code animation customized in Yellow/Amber and Red
   useEffect(() => {
@@ -102,10 +92,12 @@ export default function HeroSection() {
     };
   }, []);
 
+  const { scrollY } = useScroll();
+
   // Parallax translating rates
-  const backgroundY = scrollY * 0.4;
-  const textY = scrollY * 0.2;
-  const overlayY = scrollY * -0.12;
+  const backgroundY = useTransform(scrollY, (value) => value * 0.4);
+  const textY = useTransform(scrollY, (value) => value * 0.2);
+  const overlayY = useTransform(scrollY, (value) => value * -0.12);
 
   const personal = portfolioData.personalInfo;
 
@@ -127,12 +119,12 @@ export default function HeroSection() {
       </div>
 
       {/* Parallax layered backgrounds */}
-      <div 
+      <motion.div 
         className="absolute inset-0 z-0 pointer-events-none opacity-35"
-        style={{ transform: `translateY(${backgroundY}px)` }}
+        style={{ y: backgroundY }}
       >
         <canvas ref={canvasRef} className="w-full h-full" />
-      </div>
+      </motion.div>
 
       <div className="absolute inset-0 z-10 pointer-events-none cyber-grid h-full" />
 
@@ -172,7 +164,7 @@ export default function HeroSection() {
         {/* Dynamic scanning line overlay */}
         <div className="absolute left-0 right-0 h-0.5 bg-brand-yellow/20 shadow-md shadow-brand-yellow top-1/4 animate-bounce pointer-events-none" />
 
-        <div style={{ transform: `translateY(${textY}px)` }} className="max-w-4xl transition-all duration-75">
+        <motion.div style={{ y: textY }} className="max-w-4xl">
           
           <div className="flex flex-wrap items-center gap-3">
             <motion.div 
@@ -258,13 +250,13 @@ export default function HeroSection() {
               COMMUNICATION LINK
             </a>
           </motion.div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Cyber diagnostics right panel HUD */}
-      <div 
+      <motion.div 
         className="absolute right-0 bottom-24 w-80 hidden md:flex flex-col p-4 bg-neutral-950/90 border-2 border-neutral-800 rounded-sm font-mono text-[10px] space-y-3 z-30 shadow-2xl mr-6"
-        style={{ transform: `translateY(${overlayY}px)` }}
+        style={{ y: overlayY }}
       >
         <div className="flex items-center justify-between border-b border-neutral-800 pb-1.5 text-brand-red font-bold">
           <span className="flex items-center gap-1.5 uppercase">
@@ -301,7 +293,7 @@ export default function HeroSection() {
           <Clock className="w-3.5 h-3.5 text-brand-red animate-pulse" />
           <span>PORTFOLIO COMPILED // MAY 2026</span>
         </div>
-      </div>
+      </motion.div>
 
       {/* Scrolling Hazard bottom ribbon */}
       <div className="h-10 w-full overflow-hidden flex items-center relative z-20 shadow-md">
