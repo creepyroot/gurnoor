@@ -3,18 +3,23 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig} from 'vite';
 
-let base = './';
-if (process.env.GITHUB_REPOSITORY) {
-  const parts = process.env.GITHUB_REPOSITORY.split('/');
-  const repoName = parts.length > 1 ? parts[1] : parts[0];
-  if (repoName && repoName.endsWith('.github.io')) {
-    base = '/'; // User/Org sites sit at the root
-  } else if (repoName) {
-    base = `/${repoName}/`; // Project sites sit at a subpath
+export default defineConfig(({ command, mode }) => {
+  let base = '/';
+  
+  if (command === 'build') {
+    if (process.env.GITHUB_REPOSITORY) {
+      const parts = process.env.GITHUB_REPOSITORY.split('/');
+      const repoName = parts.length > 1 ? parts[1] : parts[0];
+      if (repoName && repoName.endsWith('.github.io')) {
+        base = '/';
+      } else if (repoName) {
+        base = `/${repoName}/`;
+      }
+    } else {
+      base = './';
+    }
   }
-}
 
-export default defineConfig(() => {
   return {
     base,
     plugins: [react(), tailwindcss()],
