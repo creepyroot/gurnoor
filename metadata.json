@@ -1,0 +1,6 @@
+{
+  "name": "Gurnoor Singh Portfolio",
+  "description": "A high-performance yellow, red, and black interactive parallax portfolio website for Gurnoor Singh - Ethical Hacker, AI Developer, and Designer Thinker.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
