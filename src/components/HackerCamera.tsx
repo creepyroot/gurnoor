@@ -216,6 +216,10 @@ export default function HackerCamera() {
     setIsVirtual(false);
 
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("SECURE FRAME RESTRICTION: Hardware API not available in nested context.");
+      }
+
       if (stream) {
         stream.getTracks().forEach((track) => track.stop());
       }

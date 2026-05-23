@@ -8,9 +8,10 @@ import EducationAndLanguages from "./components/EducationAndLanguages";
 import SuperBoldContact from "./components/SuperBoldContact";
 import Scroll3DEntrance from "./components/Scroll3DEntrance";
 import HackerCamera from "./components/HackerCamera";
-import PasswordCracker from "./components/PasswordCracker";
-import CyberTracker from "./components/CyberTracker";
 import PayloadInjector from "./components/PayloadInjector";
+import NeonDefender from "./components/NeonDefender";
+import CyberSnake from "./components/CyberSnake";
+import CyberRacer from "./components/CyberRacer";
 import { Shield, Activity, Terminal, ArrowUp, Menu, X, Cpu } from "lucide-react";
 import { portfolioData } from "./data/portfolioData";
 
@@ -222,9 +223,10 @@ export default function App() {
           <SuperBoldContact />
         </Scroll3DEntrance>
         <HackerCamera />
+        <CyberRacer />
         <PayloadInjector />
-        <PasswordCracker />
-        <CyberTracker />
+        <NeonDefender />
+        <CyberSnake />
       </main>
 
       {/* 6. Legal / Technical Footer */}

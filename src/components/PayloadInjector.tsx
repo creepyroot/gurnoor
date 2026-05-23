@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useAnimation } from 'motion/react';
 import { Crosshair, ShieldAlert, Cpu, AlertCircle, Zap } from 'lucide-react';
+import { soundEngine } from '../utils/audio';
 
 export default function PayloadInjector() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -58,9 +59,11 @@ export default function PayloadInjector() {
     if (sliderPosition >= lowerBound && sliderPosition <= upperBound) {
       // Hit!
       if (level >= 5) {
+        soundEngine.success();
         setStatus("hacked");
         if (requestRef.current) cancelAnimationFrame(requestRef.current);
       } else {
+        soundEngine.success();
         setStatus("success");
         if (requestRef.current) cancelAnimationFrame(requestRef.current);
         setTimeout(() => {
@@ -70,6 +73,7 @@ export default function PayloadInjector() {
       }
     } else {
       // Miss!
+      soundEngine.error();
       setStrikes(s => s + 1);
       if (strikes >= 2) { // 3 strikes = fail
         setStatus("failed");
