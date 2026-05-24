@@ -1,35 +1,246 @@
 import React, { useRef, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Camera, RefreshCw, Download, Monitor, ShieldCheck, AlertTriangle, Play, Pause, Cpu } from "lucide-react";
+import {
+  Camera,
+  RefreshCw,
+  Download,
+  Monitor,
+  ShieldCheck,
+  AlertTriangle,
+  Play,
+  Pause,
+  Cpu,
+} from "lucide-react";
 import * as tf from "@tensorflow/tfjs";
 import * as blazeface from "@tensorflow-models/blazeface";
 import FullscreenBtn from "./FullscreenBtn";
 import { playSound } from "../utils/audio";
+
+const drawHandSkeleton = (
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  scale: number,
+  frame: number,
+  labelText: string,
+  isLeft: boolean,
+) => {
+  const handScale = scale;
+
+  // Joints coordinates relative to center (cx, cy)
+  const wristY = cy + handScale * 0.95;
+  const wristX = cx + (isLeft ? -handScale * 0.12 : handScale * 0.12);
+
+  // Calculate five knuckles with smooth arcs and slight organic wiggles
+  const wiggleFactor = Math.sin(frame * 0.08 + (isLeft ? 0 : Math.PI)) * 4;
+
+  const thumbBaseX = cx + (isLeft ? -handScale * 0.52 : handScale * 0.52);
+  const thumbBaseY = cy + handScale * 0.28 + wiggleFactor * 0.5;
+  const thumbJoint1X = cx + (isLeft ? -handScale * 0.8 : handScale * 0.8);
+  const thumbJoint1Y = cy + handScale * 0.15 + wiggleFactor;
+  const thumbTipX = cx + (isLeft ? -handScale * 0.98 : handScale * 0.98);
+  const thumbTipY = cy - handScale * 0.05 + wiggleFactor * 1.5;
+
+  const indexBaseX = cx + (isLeft ? -handScale * 0.32 : handScale * 0.32);
+  const indexBaseY = cy - handScale * 0.05;
+  const indexJoint1X = cx + (isLeft ? -handScale * 0.35 : handScale * 0.35);
+  const indexJoint1Y = cy - handScale * 0.4 + wiggleFactor;
+  const indexTipX = cx + (isLeft ? -handScale * 0.38 : handScale * 0.38);
+  const indexTipY = cy - handScale * 0.76 + wiggleFactor * 2;
+
+  const middleBaseX = cx + (isLeft ? -handScale * 0.08 : handScale * 0.08);
+  const middleBaseY = cy - handScale * 0.12;
+  const middleJoint1X = cx + (isLeft ? -handScale * 0.08 : handScale * 0.08);
+  const middleJoint1Y = cy - handScale * 0.5 + wiggleFactor;
+  const middleTipX = cx + (isLeft ? -handScale * 0.08 : handScale * 0.08);
+  const middleTipY = cy - handScale * 0.92 + wiggleFactor * 2.2;
+
+  const ringBaseX = cx + (isLeft ? handScale * 0.15 : -handScale * 0.15);
+  const ringBaseY = cy - handScale * 0.08;
+  const ringJoint1X = cx + (isLeft ? handScale * 0.16 : -handScale * 0.16);
+  const ringJoint1Y = cy - handScale * 0.44 + wiggleFactor;
+  const ringTipX = cx + (isLeft ? handScale * 0.18 : -handScale * 0.18);
+  const ringTipY = cy - handScale * 0.84 + wiggleFactor * 2;
+
+  const pinkyBaseX = cx + (isLeft ? handScale * 0.38 : -handScale * 0.38);
+  const pinkyBaseY = cy + handScale * 0.08;
+  const pinkyJoint1X = cx + (isLeft ? handScale * 0.44 : -handScale * 0.44);
+  const pinkyJoint1Y = cy - handScale * 0.22 + wiggleFactor;
+  const pinkyTipX = cx + (isLeft ? handScale * 0.48 : -handScale * 0.48);
+  const pinkyTipY = cy - handScale * 0.58 + wiggleFactor * 1.8;
+
+  // Let's connect these points with cyber glowing laser segments
+  ctx.save();
+  ctx.shadowColor = "#00FF7F";
+  ctx.shadowBlur = 6;
+  ctx.lineWidth = 2;
+
+  // 1. Draw Wrist Connections to finger bases
+  ctx.strokeStyle = "rgba(0, 255, 127, 0.45)";
+  const bases = [
+    [thumbBaseX, thumbBaseY],
+    [indexBaseX, indexBaseY],
+    [middleBaseX, middleBaseY],
+    [ringBaseX, ringBaseY],
+    [pinkyBaseX, pinkyBaseY],
+  ];
+  bases.forEach(([bx, by]) => {
+    ctx.beginPath();
+    ctx.moveTo(wristX, wristY);
+    ctx.lineTo(bx, by);
+    ctx.stroke();
+  });
+
+  // Connect base knuckles
+  ctx.beginPath();
+  ctx.moveTo(thumbBaseX, thumbBaseY);
+  for (let i = 1; i < bases.length; i++) {
+    ctx.lineTo(bases[i][0], bases[i][1]);
+  }
+  ctx.stroke();
+
+  // 2. Draw Finger Chains with gorgeous emerald lines and active joint target dots
+  const chains = [
+    [
+      [thumbBaseX, thumbBaseY],
+      [thumbJoint1X, thumbJoint1Y],
+      [thumbTipX, thumbTipY],
+      "TMB",
+    ],
+    [
+      [indexBaseX, indexBaseY],
+      [indexJoint1X, indexJoint1Y],
+      [indexTipX, indexTipY],
+      "IDX",
+    ],
+    [
+      [middleBaseX, middleBaseY],
+      [middleJoint1X, middleJoint1Y],
+      [middleTipX, middleTipY],
+      "MID",
+    ],
+    [
+      [ringBaseX, ringBaseY],
+      [ringJoint1X, ringJoint1Y],
+      [ringTipX, ringTipY],
+      "RNG",
+    ],
+    [
+      [pinkyBaseX, pinkyBaseY],
+      [pinkyJoint1X, pinkyJoint1Y],
+      [pinkyTipX, pinkyTipY],
+      "PNK",
+    ],
+  ] as const;
+
+  ctx.strokeStyle = "rgba(0, 255, 127, 0.9)";
+  chains.forEach(([base, joint, tip, name]) => {
+    // Chain line
+    ctx.beginPath();
+    ctx.moveTo(base[0], base[1]);
+    ctx.lineTo(joint[0], joint[1]);
+    ctx.lineTo(tip[0], tip[1]);
+    ctx.stroke();
+
+    // Draw active Joint nodes
+    ctx.fillStyle = "#FFD700";
+    ctx.beginPath();
+    ctx.arc(base[0], base[1], 3.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(joint[0], joint[1], 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Glowing Fingertip sensor
+    ctx.fillStyle = "#FF3333";
+    ctx.beginPath();
+    ctx.arc(tip[0], tip[1], 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Finger Tip digital marker
+    ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+    ctx.font = "bold 7px 'Courier New', monospace";
+    ctx.fillText(`${name}_TP`, tip[0] + 6, tip[1] - 3);
+  });
+
+  // 3. Wrist anchor label and coordinate indicators
+  ctx.fillStyle = "#FFD700";
+  ctx.beginPath();
+  ctx.arc(wristX, wristY, 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "rgba(0, 255, 127, 0.15)";
+  ctx.beginPath();
+  ctx.arc(wristX, wristY, 12, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#00FF7F";
+  ctx.font = "bold 8px 'Courier New', monospace";
+  ctx.fillText(`${labelText} // ANCHOR`, wristX - 35, wristY + 14);
+
+  // Clean hand bounding box
+  ctx.strokeStyle = "rgba(0, 255, 127, 0.25)";
+  ctx.lineWidth = 1;
+  const boundsW = handScale * 1.9;
+  const boundsH = handScale * 2.2;
+  ctx.strokeRect(cx - boundsW / 2, cy - handScale * 1.1, boundsW, boundsH);
+
+  ctx.fillStyle = "rgba(0, 255, 127, 0.1)";
+  ctx.fillRect(cx - boundsW / 2, cy - handScale * 1.1, 52, 12);
+  ctx.fillStyle = "#00FF7F";
+  ctx.font = "bold 6px 'Courier New', monospace";
+  ctx.fillText("CV_LOCK_HND", cx - boundsW / 2 + 4, cy - handScale * 1.1 + 8);
+  ctx.restore();
+};
 
 export default function HackerCamera() {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const virtualCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  
+  const handsCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
   const [stream, setStream] = useState<MediaStream | null>(null);
-  const [cameraState, setCameraState] = useState<"off" | "loading" | "active" | "error">("off");
+  const [cameraState, setCameraState] = useState<
+    "off" | "loading" | "active" | "error"
+  >("off");
   const [isVirtual, setIsVirtual] = useState(false);
-  const [feedType, setFeedType] = useState<"webcam" | "screen" | "virtual">("virtual");
+  const [feedType, setFeedType] = useState<"webcam" | "screen" | "virtual">(
+    "virtual",
+  );
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState<"cyber" | "matrix" | "thermal" | "none">("cyber");
+  const [activeFilter, setActiveFilter] = useState<
+    "cyber" | "matrix" | "thermal" | "none"
+  >("none");
   const [isFlashing, setIsFlashing] = useState(false);
   const [customName, setCustomName] = useState("GUEST_AGENT");
-  
+
   const [model, setModel] = useState<blazeface.BlazeFaceModel | null>(null);
-  const [faceBounds, setFaceBounds] = useState<{ x: number, y: number, width: number, height: number, landmarks?: {x: number, y: number}[] | null } | null>(null);
+  const [faceBounds, setFaceBounds] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    landmarks?: { x: number; y: number }[] | null;
+  } | null>(null);
+
+  // Interactive Target Mask State
+  const [maskPos, setMaskPos] = useState({ x: 50, y: 50 }); // in percentages
+  const [isHovering, setIsHovering] = useState(false);
+
+  const [telemetry, setTelemetry] = useState({
+    ip: "103.88.22.14",
+    fps: 30,
+    status: "ENCRYPTED_FEED",
+  });
+
+  const [tickerText, setTickerText] = useState("STREAM_LOCK_SECURE");
 
   // Initialize Face Detector
   useEffect(() => {
     async function initModel() {
       try {
-        await tf.setBackend('webgl');
+        await tf.setBackend("webgl");
         const loadedModel = await blazeface.load();
         setModel(loadedModel);
       } catch (err) {
@@ -44,24 +255,34 @@ export default function HackerCamera() {
     let isCanceled = false;
 
     async function trackFace() {
-      if (cameraState !== "active" || isVirtual || !model || !videoRef.current || capturedImage) return;
-      
+      if (
+        cameraState !== "active" ||
+        isVirtual ||
+        !model ||
+        !videoRef.current ||
+        capturedImage
+      )
+        return;
+
       if (videoRef.current.readyState === 4) {
         try {
-          const predictions = await model.estimateFaces(videoRef.current, false);
+          const predictions = await model.estimateFaces(
+            videoRef.current,
+            false,
+          );
           if (!isCanceled && predictions.length > 0 && videoRef.current) {
             const pred = predictions[0];
             const topLeft = pred.topLeft as [number, number];
             const bottomRight = pred.bottomRight as [number, number];
             const landmarks = pred.landmarks as [number, number][]; // 0:eye, 1:eye, 2:nose, 3:mouth, 4:ear, 5:ear
-            
+
             const videoW = videoRef.current.videoWidth;
             const videoH = videoRef.current.videoHeight;
-            
+
             if (videoW > 0 && videoH > 0) {
               const rectWidth = ((bottomRight[0] - topLeft[0]) / videoW) * 100;
               const rectHeight = ((bottomRight[1] - topLeft[1]) / videoH) * 100;
-              
+
               // Raw X in percentage
               const rawX = (topLeft[0] / videoW) * 100;
               // Video is mirrored via CSS scale-x-[-1] so we mirror the X coordinate!
@@ -70,15 +291,18 @@ export default function HackerCamera() {
 
               let parsedLandmarks = null;
               if (landmarks && landmarks.length >= 4) {
-                 parsedLandmarks = landmarks.map(p => ({
-                   x: 100 - ((p[0] / videoW) * 100),
-                   y: (p[1] / videoH) * 100
-                 }));
+                parsedLandmarks = landmarks.map((p) => ({
+                  x: 100 - (p[0] / videoW) * 100,
+                  y: (p[1] / videoH) * 100,
+                }));
               }
 
-              setFaceBounds({ 
-                x: xPos, y: yPos, width: rectWidth, height: rectHeight,
-                landmarks: parsedLandmarks
+              setFaceBounds({
+                x: xPos,
+                y: yPos,
+                width: rectWidth,
+                height: rectHeight,
+                landmarks: parsedLandmarks,
               });
             }
           } else {
@@ -86,29 +310,198 @@ export default function HackerCamera() {
           }
         } catch (e) {}
       }
-      
+
       if (!isCanceled) {
         requestAnimationFrame(trackFace);
       }
     }
-    
+
     if (cameraState === "active" && !isVirtual && !capturedImage) {
       trackFace();
     }
-    
+
     return () => {
       isCanceled = true;
       setFaceBounds(null);
     };
   }, [cameraState, isVirtual, model, capturedImage]);
 
-  const [telemetry, setTelemetry] = useState({
-    ip: "103.88.22.14",
-    fps: 30,
-    status: "ENCRYPTED_FEED",
+  const handCoordsRef = useRef({
+    leftX: 160,
+    leftY: 230,
+    rightX: 480,
+    rightY: 230,
   });
 
-  const [tickerText, setTickerText] = useState("STREAM_LOCK_SECURE");
+  // Real-time Computer Vision Motion Tracker for hands
+  useEffect(() => {
+    if (
+      cameraState !== "active" ||
+      isVirtual ||
+      !handsCanvasRef.current ||
+      !videoRef.current
+    )
+      return;
+
+    const overlayCanvas = handsCanvasRef.current;
+    const video = videoRef.current;
+    let animationId: number;
+    let frame = 0;
+
+    // Offscreen downscaler to compute frame-to-frame motion contrast
+    const backCanvas = document.createElement("canvas");
+    backCanvas.width = 32;
+    backCanvas.height = 24;
+    const backCtx = backCanvas.getContext("2d");
+    let prevData: Uint8ClampedArray | null = null;
+
+    // Start coordinates
+    let lx = overlayCanvas.clientWidth * 0.25 || 160;
+    let ly = overlayCanvas.clientHeight * 0.65 || 230;
+    let rx = overlayCanvas.clientWidth * 0.75 || 480;
+    let ry = overlayCanvas.clientHeight * 0.65 || 230;
+
+    let targetLeftX = lx;
+    let targetLeftY = ly;
+    let targetRightX = rx;
+    let targetRightY = ry;
+
+    let maxDelta = 0;
+
+    const computeMotionCV = () => {
+      frame++;
+      const w = (overlayCanvas.width = overlayCanvas.clientWidth || 640);
+      const h = (overlayCanvas.height = overlayCanvas.clientHeight || 360);
+
+      const ctx = overlayCanvas.getContext("2d");
+      if (!ctx) {
+        animationId = requestAnimationFrame(computeMotionCV);
+        return;
+      }
+
+      ctx.clearRect(0, 0, w, h);
+
+      maxDelta = 0;
+      // 1. Run real-time Motion-Detection-based Hand-Wave Tracking
+      if (video.readyState === 4 && backCtx) {
+        try {
+          backCtx.drawImage(video, 0, 0, 32, 24);
+          const frameImg = backCtx.getImageData(0, 0, 32, 24);
+          const currData = frameImg.data;
+
+          if (prevData) {
+            let motionX = 16;
+            let motionY = 12;
+
+            for (let y = 0; y < 24; y++) {
+              for (let x = 0; x < 32; x++) {
+                const idx = (y * 32 + x) * 4;
+                const prevBright =
+                  (prevData[idx] + prevData[idx + 1] + prevData[idx + 2]) / 3;
+                const currBright =
+                  (currData[idx] + currData[idx + 1] + currData[idx + 2]) / 3;
+                const delta = Math.abs(currBright - prevBright);
+                if (delta > maxDelta) {
+                  maxDelta = delta;
+                  motionX = x;
+                  motionY = y;
+                }
+              }
+            }
+
+            // If delta exceeds threshold, snap the Right Hand CV target to motion!
+            if (maxDelta > 15) {
+              const targetXPercent =
+                feedType === "screen" ? motionX / 32 : 1 - motionX / 32;
+              const targetYPercent = motionY / 24;
+
+              targetRightX = targetXPercent * w;
+              targetRightY = targetYPercent * h;
+            }
+          }
+          prevData = currData;
+        } catch (err) {
+          // Fallback safely on cross-origin stream blocks
+        }
+      }
+
+      // 2. Left Hand follows mouse cursor hover triggers as dynamic pointer glove
+      if (isHovering && !faceBounds) {
+        targetLeftX = (maskPos.x / 100) * w;
+        targetLeftY = (maskPos.y / 100) * h;
+      } else {
+        // Calm breathing wave motion
+        targetLeftX = w * 0.25 + Math.sin(frame * 0.02) * 20;
+        targetLeftY = h * 0.55 + Math.cos(frame * 0.035) * 15;
+      }
+
+      // 3. Resting decay slide drift for Right hand if stationary
+      if (targetRightX === w * 0.75 || Math.random() < 0.008) {
+        const driftX = w * 0.7 + Math.sin(frame * 0.01) * 35;
+        const driftY = h * 0.58 + Math.cos(frame * 0.025) * 20;
+        targetRightX = targetRightX * 0.9 + driftX * 0.1;
+        targetRightY = targetRightY * 0.9 + driftY * 0.1;
+      }
+
+      // Apply Spring damping
+      lx += (targetLeftX - lx) * 0.09;
+      ly += (targetLeftY - ly) * 0.09;
+      rx += (targetRightX - rx) * 0.09;
+      ry += (targetRightY - ry) * 0.09;
+
+      // Update Ref for static Snapshot grabber
+      handCoordsRef.current = { leftX: lx, leftY: ly, rightX: rx, rightY: ry };
+
+      // 4. Render skeletal dual structures!
+      const handsDetected = maxDelta > 15;
+      if (handsDetected || isHovering) {
+        drawHandSkeleton(ctx, lx, ly, w * 0.11, frame, "LEFT_HAND_SDR", true);
+        drawHandSkeleton(ctx, rx, ry, w * 0.11, frame, "RIGHT_HAND_CV", false);
+      }
+
+      // Drawn connected radar coordinates
+      if (faceBounds) {
+        const fx = ((faceBounds.x + faceBounds.width / 2) / 100) * w;
+        const fy = ((faceBounds.y + faceBounds.height / 2) / 100) * h;
+
+        ctx.save();
+        ctx.strokeStyle = "rgba(255, 215, 0, 0.2)";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(fx, fy);
+        ctx.lineTo(lx, ly);
+        ctx.moveTo(fx, fy);
+        ctx.lineTo(rx, ry);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Draw hand target labels
+      ctx.save();
+      ctx.fillStyle = "rgba(0, 255, 127, 0.9)";
+      ctx.font = "bold 8px 'Courier New', monospace";
+      ctx.fillText(
+        `● CV_HANDS_SCANNER: ENGAGED | RATE: ${telemetry.fps} FPS`,
+        15,
+        h - 15,
+      );
+      ctx.restore();
+
+      animationId = requestAnimationFrame(computeMotionCV);
+    };
+
+    animationId = requestAnimationFrame(computeMotionCV);
+    return () => cancelAnimationFrame(animationId);
+  }, [
+    cameraState,
+    isVirtual,
+    isHovering,
+    maskPos,
+    faceBounds,
+    feedType,
+    telemetry?.fps,
+  ]);
 
   // Cycle through some random cyber-attack strings for terminal immersion
   useEffect(() => {
@@ -142,19 +535,20 @@ export default function HackerCamera() {
 
   // Virtual Biometric Face & Screen Gaze Scanner Animation Loop
   useEffect(() => {
-    if (!isVirtual || cameraState !== "active" || !virtualCanvasRef.current) return;
-    
+    if (!isVirtual || cameraState !== "active" || !virtualCanvasRef.current)
+      return;
+
     const canvas = virtualCanvasRef.current;
     const context = canvas.getContext("2d");
     if (!context) return;
-    
+
     let animationId: number;
     let frame = 0;
 
     const render = () => {
       frame++;
-      const w = canvas.width = 640;
-      const h = canvas.height = 360;
+      const w = (canvas.width = 640);
+      const h = (canvas.height = 360);
       context.fillStyle = "#030303";
       context.fillRect(0, 0, w, h);
 
@@ -193,7 +587,11 @@ export default function HackerCamera() {
       context.fillStyle = "#FFD700";
       context.font = "8px 'Courier New', monospace";
       context.textAlign = "right";
-      context.fillText("TARGET: " + (customName || "GUEST_AGENT").toUpperCase(), w - 12, 14);
+      context.fillText(
+        "TARGET: " + (customName || "GUEST_AGENT").toUpperCase(),
+        w - 12,
+        14,
+      );
       context.textAlign = "left";
 
       // Left Sidebar File System
@@ -208,8 +606,14 @@ export default function HackerCamera() {
       context.fillStyle = "rgba(255, 255, 255, 0.3)";
       context.font = "bold 8px 'Courier New', monospace";
       context.fillText("▼ PROJECT FILES", 10, 38);
-      
-      const files = ["index.html", "src/App.tsx", "src/types.ts", "HackerCamera.tsx", "portfolioData.ts"];
+
+      const files = [
+        "index.html",
+        "src/App.tsx",
+        "src/types.ts",
+        "HackerCamera.tsx",
+        "portfolioData.ts",
+      ];
       files.forEach((file, idx) => {
         const isFocused = idx === Math.floor((frame / 120) % files.length);
         context.fillStyle = isFocused ? "#FFD700" : "rgba(255, 255, 255, 0.5)";
@@ -217,7 +621,10 @@ export default function HackerCamera() {
       });
 
       // 3. Central Simulated Browser View representing creepyroot.github.io/gurnoorsingh
-      const bx = 120, by = 30, bw = 345, bh = h - 42;
+      const bx = 120,
+        by = 30,
+        bw = 345,
+        bh = h - 42;
       context.fillStyle = "rgba(5, 5, 5, 0.9)";
       context.fillRect(bx, by, bw, bh);
       context.strokeStyle = "rgba(255, 51, 51, 0.25)";
@@ -237,25 +644,44 @@ export default function HackerCamera() {
       context.fillRect(bx + 40, by + 4, bw - 50, 12);
       context.fillStyle = "rgba(0, 255, 170, 0.9)";
       context.font = "8px 'Courier New', monospace";
-      context.fillText("https://creepyroot.github.io/gurnoor_portfolio", bx + 45, by + 12);
+      context.fillText(
+        "https://creepyroot.github.io/gurnoor_portfolio",
+        bx + 45,
+        by + 12,
+      );
 
       // Draw three browser buttons
       context.fillStyle = "#FF3333";
-      context.beginPath(); context.arc(bx + 12, by + 10, 3, 0, Math.PI * 2); context.fill();
+      context.beginPath();
+      context.arc(bx + 12, by + 10, 3, 0, Math.PI * 2);
+      context.fill();
       context.fillStyle = "#FFD700";
-      context.beginPath(); context.arc(bx + 20, by + 10, 3, 0, Math.PI * 2); context.fill();
+      context.beginPath();
+      context.arc(bx + 20, by + 10, 3, 0, Math.PI * 2);
+      context.fill();
       context.fillStyle = "#00FF66";
-      context.beginPath(); context.arc(bx + 28, by + 10, 3, 0, Math.PI * 2); context.fill();
+      context.beginPath();
+      context.arc(bx + 28, by + 10, 3, 0, Math.PI * 2);
+      context.fill();
 
       // Inside simulated portfolio web-page content
       context.fillStyle = "rgba(255, 255, 255, 0.8)";
       context.font = "bold 11px font-sans, sans-serif";
-      context.fillText("GURNOOR SINGH // FULLSTACK PORTFOLIO", bx + 15, by + 40);
+      context.fillText(
+        "GURNOOR SINGH // FULLSTACK PORTFOLIO",
+        bx + 15,
+        by + 40,
+      );
 
       // Draw elegant paragraphs of text lines inside browser
       context.fillStyle = "rgba(255, 255, 255, 0.3)";
       for (let i = 0; i < 8; i++) {
-        context.fillRect(bx + 15, by + 55 + i * 10, 140 + Math.sin(i * 3 + frame * 0.01) * 35, 4);
+        context.fillRect(
+          bx + 15,
+          by + 55 + i * 10,
+          140 + Math.sin(i * 3 + frame * 0.01) * 35,
+          4,
+        );
       }
 
       // Draw mock image card on browser page
@@ -277,36 +703,107 @@ export default function HackerCamera() {
       const boxS = 35 + Math.sin(frame * 0.1) * 3;
       context.strokeStyle = "#FFD700";
       context.lineWidth = 1.5;
-      context.strokeRect(targetGazeX - boxS / 2, targetGazeY - boxS / 2, boxS, boxS);
+      context.strokeRect(
+        targetGazeX - boxS / 2,
+        targetGazeY - boxS / 2,
+        boxS,
+        boxS,
+      );
 
       // Draw four targeted corner highlights
       context.fillStyle = "#FF3333";
       const cL = 6;
-      context.fillRect(targetGazeX - boxS / 2 - 1, targetGazeY - boxS / 2 - 1, cL, 2);
-      context.fillRect(targetGazeX - boxS / 2 - 1, targetGazeY - boxS / 2 - 1, 2, cL);
+      context.fillRect(
+        targetGazeX - boxS / 2 - 1,
+        targetGazeY - boxS / 2 - 1,
+        cL,
+        2,
+      );
+      context.fillRect(
+        targetGazeX - boxS / 2 - 1,
+        targetGazeY - boxS / 2 - 1,
+        2,
+        cL,
+      );
 
-      context.fillRect(targetGazeX + boxS / 2 - cL + 1, targetGazeY - boxS / 2 - 1, cL, 2);
-      context.fillRect(targetGazeX + boxS / 2 - 1, targetGazeY - boxS / 2 - 1, 2, cL);
+      context.fillRect(
+        targetGazeX + boxS / 2 - cL + 1,
+        targetGazeY - boxS / 2 - 1,
+        cL,
+        2,
+      );
+      context.fillRect(
+        targetGazeX + boxS / 2 - 1,
+        targetGazeY - boxS / 2 - 1,
+        2,
+        cL,
+      );
 
-      context.fillRect(targetGazeX - boxS / 2 - 1, targetGazeY + boxS / 2 - 2, cL, 2);
-      context.fillRect(targetGazeX - boxS / 2 - 1, targetGazeY + boxS / 2 - cL + 1, 2, cL);
+      context.fillRect(
+        targetGazeX - boxS / 2 - 1,
+        targetGazeY + boxS / 2 - 2,
+        cL,
+        2,
+      );
+      context.fillRect(
+        targetGazeX - boxS / 2 - 1,
+        targetGazeY + boxS / 2 - cL + 1,
+        2,
+        cL,
+      );
 
-      context.fillRect(targetGazeX + boxS / 2 - cL + 1, targetGazeY + boxS / 2 - 2, cL, 2);
-      context.fillRect(targetGazeX + boxS / 2 - 1, targetGazeY + boxS / 2 - cL + 1, 2, cL);
+      context.fillRect(
+        targetGazeX + boxS / 2 - cL + 1,
+        targetGazeY + boxS / 2 - 2,
+        cL,
+        2,
+      );
+      context.fillRect(
+        targetGazeX + boxS / 2 - 1,
+        targetGazeY + boxS / 2 - cL + 1,
+        2,
+        cL,
+      );
 
       // Gaze Tracker labeling
       context.fillStyle = "rgba(0, 0, 0, 0.85)";
-      context.fillRect(targetGazeX - boxS / 2, targetGazeY + boxS / 2 + 3, boxS + 35, 23);
+      context.fillRect(
+        targetGazeX - boxS / 2,
+        targetGazeY + boxS / 2 + 3,
+        boxS + 35,
+        23,
+      );
       context.strokeStyle = "#FFD700";
-      context.strokeRect(targetGazeX - boxS / 2, targetGazeY + boxS / 2 + 3, boxS + 35, 23);
+      context.strokeRect(
+        targetGazeX - boxS / 2,
+        targetGazeY + boxS / 2 + 3,
+        boxS + 35,
+        23,
+      );
 
       context.fillStyle = "#FFD700";
       context.font = "bold 6px 'Courier New', monospace";
-      context.fillText("GAZE TRACKING // ON", targetGazeX - boxS / 2 + 3, targetGazeY + boxS / 2 + 10);
+      context.fillText(
+        "GAZE TRACKING // ON",
+        targetGazeX - boxS / 2 + 3,
+        targetGazeY + boxS / 2 + 10,
+      );
       context.fillStyle = "#FFFFFF";
-      context.fillText("COORD: [" + Math.round(targetGazeX) + ", " + Math.round(targetGazeY) + "]", targetGazeX - boxS / 2 + 3, targetGazeY + boxS / 2 + 16);
+      context.fillText(
+        "COORD: [" +
+          Math.round(targetGazeX) +
+          ", " +
+          Math.round(targetGazeY) +
+          "]",
+        targetGazeX - boxS / 2 + 3,
+        targetGazeY + boxS / 2 + 16,
+      );
       context.fillStyle = "#FF3333";
-      context.fillText("ATTENTION: HIGH", targetGazeX - boxS / 2 + 3, targetGazeY + boxS / 2 + 22);
+      context.fillText(
+        "ATTENTION: HIGH",
+        targetGazeX - boxS / 2 + 3,
+        targetGazeY + boxS / 2 + 22,
+      );
 
       // Connect Gaze pointer to the top bar
       context.strokeStyle = "rgba(255, 215, 0, 0.15)";
@@ -317,7 +814,10 @@ export default function HackerCamera() {
       context.stroke();
 
       // 5. Drawer Quadrant: Right Sidebar showing "AI detector looking at Person"
-      const rx = 475, ry = 30, rw = 155, rh = h - 42;
+      const rx = 475,
+        ry = 30,
+        rw = 155,
+        rh = h - 42;
       context.fillStyle = "rgba(10, 10, 10, 0.9)";
       context.fillRect(rx, ry, rw, rh);
       context.strokeStyle = "rgba(255, 215, 0, 0.15)";
@@ -329,7 +829,10 @@ export default function HackerCamera() {
       context.fillText("LIVE SUBJECT ANALYSIS", rx + 10, ry + 15);
 
       // Draw a mini simulated face camera box
-      const fcX = rx + 15, fcY = ry + 25, fcW = 125, fcH = 85;
+      const fcX = rx + 15,
+        fcY = ry + 25,
+        fcW = 125,
+        fcH = 85;
       context.fillStyle = "#000000";
       context.fillRect(fcX, fcY, fcW, fcH);
       context.strokeStyle = "rgba(255, 51, 51, 0.3)";
@@ -347,7 +850,8 @@ export default function HackerCamera() {
       context.stroke();
 
       // Draw AI target box over the head/avatar person in the mini view
-      const aboxW = 38, aboxH = 38;
+      const aboxW = 38,
+        aboxH = 38;
       context.strokeStyle = "rgba(0, 255, 127, 0.9)";
       context.lineWidth = 1.2;
       context.strokeRect(hx - aboxW / 2, hy - 16, aboxW, aboxH);
@@ -359,12 +863,20 @@ export default function HackerCamera() {
       // Identity tag on face box
       context.fillStyle = "#00FF7F";
       context.font = "6px 'Courier New', sans-serif";
-      context.fillText("ID: " + (customName || "GUEST").substring(0, 10).toUpperCase(), hx - aboxW / 2 + 2, hy + 30);
+      context.fillText(
+        "ID: " + (customName || "GUEST").substring(0, 10).toUpperCase(),
+        hx - aboxW / 2 + 2,
+        hy + 30,
+      );
 
       // Draw eyes target lights
       context.fillStyle = "#FFD700";
-      context.beginPath(); context.arc(hx - 5, hy - 2, 2, 0, Math.PI * 2); context.fill();
-      context.beginPath(); context.arc(hx + 5, hy - 2, 2, 0, Math.PI * 2); context.fill();
+      context.beginPath();
+      context.arc(hx - 5, hy - 2, 2, 0, Math.PI * 2);
+      context.fill();
+      context.beginPath();
+      context.arc(hx + 5, hy - 2, 2, 0, Math.PI * 2);
+      context.fill();
 
       // Diagnostic output below mini feedback
       context.fillStyle = "rgba(255, 255, 255, 0.5)";
@@ -380,7 +892,11 @@ export default function HackerCamera() {
       context.lineWidth = 1;
       context.beginPath();
       for (let i = 0; i < rw - 30; i++) {
-        const py = ry + 195 + Math.sin(i * 0.12 + frame * 0.1) * 12 + Math.cos(i * 0.05) * 4;
+        const py =
+          ry +
+          195 +
+          Math.sin(i * 0.12 + frame * 0.1) * 12 +
+          Math.cos(i * 0.05) * 4;
         if (i === 0) context.moveTo(rx + 15 + i, py);
         else context.lineTo(rx + 15 + i, py);
       }
@@ -389,6 +905,31 @@ export default function HackerCamera() {
       context.fillStyle = "rgba(255, 255, 255, 0.35)";
       context.font = "5px 'Courier New', monospace";
       context.fillText("COGNITIVE ATTENDANCE STIMULATOR", rx + 15, ry + 218);
+
+      // Draw simulated scanning hands inside the virtual simulator
+      const simLeftX = bx + bw * 0.25 + Math.sin(frame * 0.03) * 20;
+      const simLeftY = by + bh * 0.6 + Math.cos(frame * 0.02) * 15;
+      const simRightX = bx + bw * 0.75 + Math.cos(frame * 0.025) * 20;
+      const simRightY = by + bh * 0.6 + Math.sin(frame * 0.035) * 15;
+
+      drawHandSkeleton(
+        context,
+        simLeftX,
+        simLeftY,
+        26,
+        frame,
+        "L_HND_SIM",
+        true,
+      );
+      drawHandSkeleton(
+        context,
+        simRightX,
+        simRightY,
+        26,
+        frame,
+        "R_HND_SIM",
+        false,
+      );
 
       animationId = requestAnimationFrame(render);
     };
@@ -415,7 +956,9 @@ export default function HackerCamera() {
 
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error("SECURE FRAME RESTRICTION: Hardware API not available in nested context.");
+        throw new Error(
+          "SECURE FRAME RESTRICTION: Hardware API not available in nested context.",
+        );
       }
 
       if (stream) {
@@ -434,15 +977,20 @@ export default function HackerCamera() {
       setStream(mediaStream);
       setCameraState("active");
     } catch (err: any) {
-      console.error("Camera access error, falling back to virtual simulator:", err);
+      console.error(
+        "Camera access error, falling back to virtual simulator:",
+        err,
+      );
       // Instead of failing completely, smoothly launch the simulated virtual biometric feed!
       setIsVirtual(true);
       setCameraState("active");
       setFeedType("virtual");
-      
+
       // Keep a mini error notifier in state so they know they are using the virtual backup
       const errName = err.name || "Default";
-      setErrorMessage(`HARDWARE ACCESS PORT CLOSED (${errName}). INTEGRATING EMULATED CYBER BIOMETRIC NODE.`);
+      setErrorMessage(
+        `HARDWARE ACCESS PORT CLOSED (${errName}). INTEGRATING EMULATED CYBER BIOMETRIC NODE.`,
+      );
     }
   };
 
@@ -456,7 +1004,9 @@ export default function HackerCamera() {
 
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-        throw new Error("Screen sharing API not available or blocked in this browser context.");
+        throw new Error(
+          "Screen sharing API not available or blocked in this browser context.",
+        );
       }
 
       if (stream) {
@@ -466,9 +1016,9 @@ export default function HackerCamera() {
       const mediaStream = await navigator.mediaDevices.getDisplayMedia({
         video: {
           width: { ideal: 1920 },
-          height: { ideal: 1080 }
+          height: { ideal: 1080 },
         },
-        audio: false
+        audio: false,
       });
 
       // Handle stream end (user clicks "Stop sharing" from system dialog)
@@ -479,13 +1029,18 @@ export default function HackerCamera() {
       setStream(mediaStream);
       setCameraState("active");
     } catch (err: any) {
-      console.error("Screen capture failed, falling back to attention simulator:", err);
+      console.error(
+        "Screen capture failed, falling back to attention simulator:",
+        err,
+      );
       setIsVirtual(true);
       setCameraState("active");
       setFeedType("virtual");
-      
+
       const errName = err.name || "Error";
-      setErrorMessage(`SCREEN PORT BLOCKED OR DECLINED (${errName}). INTEGRATING EMULATED EYE ATTENTION MONITOR.`);
+      setErrorMessage(
+        `SCREEN PORT BLOCKED OR DECLINED (${errName}). INTEGRATING EMULATED EYE ATTENTION MONITOR.`,
+      );
     }
   };
 
@@ -512,9 +1067,9 @@ export default function HackerCamera() {
   const takeSnapshot = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     // Flash feed
-    playSound('shoot');
+    playSound("shoot");
     setIsFlashing(true);
     setTimeout(() => setIsFlashing(false), 200);
 
@@ -529,7 +1084,13 @@ export default function HackerCamera() {
 
     if (isVirtual && virtualCanvasRef.current) {
       // 1. Snapshot the Virtual simulator drawing
-      ctx.drawImage(virtualCanvasRef.current, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(
+        virtualCanvasRef.current,
+        0,
+        0,
+        canvas.width,
+        canvas.height,
+      );
     } else if (videoRef.current) {
       // 1. Snapshot the actual live video mirrored
       ctx.translate(canvas.width, 0);
@@ -552,9 +1113,9 @@ export default function HackerCamera() {
         let g = data[i + 1];
         let b = data[i + 2];
         // Immersive cybernetic red tint matching branding
-        data[i] = Math.min(255, r * 1.35); 
-        data[i + 1] = g * 0.45; 
-        data[i + 2] = b * 0.55; 
+        data[i] = Math.min(255, r * 1.35);
+        data[i + 1] = g * 0.45;
+        data[i + 2] = b * 0.55;
       }
       ctx.putImageData(imgData, 0, 0);
     } else if (activeFilter === "matrix") {
@@ -563,9 +1124,9 @@ export default function HackerCamera() {
         let g = data[i + 1];
         let b = data[i + 2];
         const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
-        data[i] = 0; 
-        data[i + 1] = Math.min(255, luminance * 1.55); 
-        data[i + 2] = 0; 
+        data[i] = 0;
+        data[i + 1] = Math.min(255, luminance * 1.55);
+        data[i + 2] = 0;
       }
       ctx.putImageData(imgData, 0, 0);
     } else if (activeFilter === "thermal") {
@@ -602,17 +1163,17 @@ export default function HackerCamera() {
     let boxH = 240;
 
     if (faceBounds) {
-      boxCX = (faceBounds.x + faceBounds.width / 2) / 100 * canvas.width;
-      boxCY = (faceBounds.y + faceBounds.height / 2) / 100 * canvas.height;
+      boxCX = ((faceBounds.x + faceBounds.width / 2) / 100) * canvas.width;
+      boxCY = ((faceBounds.y + faceBounds.height / 2) / 100) * canvas.height;
       boxW = (faceBounds.width / 100) * canvas.width * 1.5;
       boxH = (faceBounds.height / 100) * canvas.height * 1.5;
     } else {
-      boxCX = (maskPos.x) / 100 * canvas.width;
-      boxCY = (maskPos.y) / 100 * canvas.height;
+      boxCX = (maskPos.x / 100) * canvas.width;
+      boxCY = (maskPos.y / 100) * canvas.height;
     }
 
     ctx.save();
-    
+
     // Draw neon emerald/amber AI Bounding target box
     ctx.strokeStyle = "#00FF7F";
     ctx.lineWidth = 3;
@@ -634,7 +1195,7 @@ export default function HackerCamera() {
     ctx.strokeStyle = "#FFD700";
     ctx.lineWidth = 4;
     const sLen = 25;
-    
+
     // Top-Left corner link
     ctx.beginPath();
     ctx.moveTo(boxCX - boxW / 2, boxCY - boxH / 2 + sLen);
@@ -665,12 +1226,20 @@ export default function HackerCamera() {
 
     // Pupil target indicators inside HD snapshot
     ctx.fillStyle = "#00FF7F";
-    ctx.beginPath(); ctx.arc(boxCX - boxW * 0.22, boxCY - boxH * 0.15, 6, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(boxCX + boxW * 0.22, boxCY - boxH * 0.15, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath();
+    ctx.arc(boxCX - boxW * 0.22, boxCY - boxH * 0.15, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(boxCX + boxW * 0.22, boxCY - boxH * 0.15, 6, 0, Math.PI * 2);
+    ctx.fill();
     ctx.strokeStyle = "#FFFFFF";
     ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.arc(boxCX - boxW * 0.22, boxCY - boxH * 0.15, 12, 0, Math.PI * 2); ctx.stroke();
-    ctx.beginPath(); ctx.arc(boxCX + boxW * 0.22, boxCY - boxH * 0.15, 12, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(boxCX - boxW * 0.22, boxCY - boxH * 0.15, 12, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(boxCX + boxW * 0.22, boxCY - boxH * 0.15, 12, 0, Math.PI * 2);
+    ctx.stroke();
 
     // AI Classification Badge Stamp on top of target
     ctx.fillStyle = "#FFD700";
@@ -681,7 +1250,11 @@ export default function HackerCamera() {
     ctx.fillStyle = "#000000";
     ctx.font = "bold 11px 'Courier New', monospace";
     ctx.textAlign = "left";
-    ctx.fillText("● AI_LOCK: " + (customName || "GUEST_AGENT").toUpperCase(), boxCX - boxW / 2 + 10, boxCY - boxH / 2 - 12);
+    ctx.fillText(
+      "● AI_LOCK: " + (customName || "GUEST_AGENT").toUpperCase(),
+      boxCX - boxW / 2 + 10,
+      boxCY - boxH / 2 - 12,
+    );
 
     // Bottom classification metrics stamp
     ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
@@ -691,9 +1264,44 @@ export default function HackerCamera() {
     ctx.fillStyle = "#FF3333";
     ctx.font = "bold 9px 'Courier New', monospace";
     ctx.textAlign = "left";
-    ctx.fillText("CLASS: HUMAN_SUBJECT | CONFID: 99.87%", boxCX - boxW / 2 + 8, boxCY + boxH / 2 + 16);
+    ctx.fillText(
+      "CLASS: HUMAN_SUBJECT | CONFID: 99.87%",
+      boxCX - boxW / 2 + 8,
+      boxCY + boxH / 2 + 16,
+    );
 
     ctx.restore();
+
+    // Draw tracked hands skeletons on high-res output snapshot
+    const scaleFactorX =
+      canvas.width / (handsCanvasRef.current?.clientWidth || 640);
+    const scaleFactorY =
+      canvas.height / (handsCanvasRef.current?.clientHeight || 360);
+    if (handCoordsRef.current) {
+      const snapLeftX = handCoordsRef.current.leftX * scaleFactorX;
+      const snapLeftY = handCoordsRef.current.leftY * scaleFactorY;
+      const snapRightX = handCoordsRef.current.rightX * scaleFactorX;
+      const snapRightY = handCoordsRef.current.rightY * scaleFactorY;
+
+      drawHandSkeleton(
+        ctx,
+        snapLeftX,
+        snapLeftY,
+        canvas.width * 0.1,
+        42,
+        "LEFT_HAND_SND",
+        true,
+      );
+      drawHandSkeleton(
+        ctx,
+        snapRightX,
+        snapRightY,
+        canvas.width * 0.1,
+        42,
+        "RIGHT_HAND_CV",
+        false,
+      );
+    }
 
     // 3. Cyber horizontal render scanlines
     ctx.strokeStyle = "rgba(0, 0, 0, 0.18)";
@@ -748,21 +1356,37 @@ export default function HackerCamera() {
     ctx.fillStyle = "#FFFFFF";
     ctx.font = "bold 15px 'Courier New', monospace";
     ctx.textAlign = "left";
-    ctx.fillText(`OPERATOR: ${(customName || "GUEST_AGENT").toUpperCase()}`, 50, canvas.height - 40);
-    
+    ctx.fillText(
+      `OPERATOR: ${(customName || "GUEST_AGENT").toUpperCase()}`,
+      50,
+      canvas.height - 40,
+    );
+
     ctx.fillStyle = "#FF3333";
     ctx.font = "bold 18px 'Courier New', monospace";
-    ctx.fillText("CREEPYROOT // CYBER SECURITY CERTIFIED", 50, canvas.height - 15);
+    ctx.fillText(
+      "CREEPYROOT // CYBER SECURITY CERTIFIED",
+      50,
+      canvas.height - 15,
+    );
 
     // Dynamic right-aligned requested watermark website URL
     ctx.fillStyle = "#FFD700";
     ctx.font = "bold 18px 'Courier New', monospace";
     ctx.textAlign = "right";
-    ctx.fillText("CREEPYROOT.GITHUB.IO/GURNOORSINGH", canvas.width - 50, canvas.height - 15);
+    ctx.fillText(
+      "CREEPYROOT.GITHUB.IO/GURNOORSINGH",
+      canvas.width - 50,
+      canvas.height - 15,
+    );
 
     ctx.fillStyle = "#FFFFFF";
     ctx.font = "12px 'Courier New', monospace";
-    ctx.fillText("INTELLIGENCE OVERLAY ACCESSIBLE", canvas.width - 50, canvas.height - 42);
+    ctx.fillText(
+      "INTELLIGENCE OVERLAY ACCESSIBLE",
+      canvas.width - 50,
+      canvas.height - 42,
+    );
 
     // Center targeting HUD
     ctx.textAlign = "center";
@@ -799,20 +1423,25 @@ export default function HackerCamera() {
   const getFilterStyle = (filter: string) => {
     switch (filter) {
       case "cyber":
-        return { filter: "grayscale(100%) sepia(100%) hue-rotate(320deg) saturate(400%) contrast(120%)" };
+        return {
+          filter:
+            "grayscale(100%) sepia(100%) hue-rotate(320deg) saturate(400%) contrast(120%)",
+        };
       case "matrix":
-        return { filter: "grayscale(100%) sepia(100%) hue-rotate(70deg) saturate(400%) contrast(120%)" };
+        return {
+          filter:
+            "grayscale(100%) sepia(100%) hue-rotate(70deg) saturate(400%) contrast(120%)",
+        };
       case "thermal":
         // A rough simulation of thermal camera using color inversion and hue shift
-        return { filter: "invert(100%) sepia(100%) hue-rotate(130deg) saturate(500%) contrast(150%) brightness(120%)" };
+        return {
+          filter:
+            "invert(100%) sepia(100%) hue-rotate(130deg) saturate(500%) contrast(150%) brightness(120%)",
+        };
       default:
         return {};
     }
   };
-
-  // Interactive Target Mask State
-  const [maskPos, setMaskPos] = useState({ x: 50, y: 50 }); // in percentages
-  const [isHovering, setIsHovering] = useState(false);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     // Only track mouse if not tracking face
@@ -825,7 +1454,9 @@ export default function HackerCamera() {
   };
 
   const currentX = faceBounds ? faceBounds.x + faceBounds.width / 2 : maskPos.x;
-  const currentY = faceBounds ? faceBounds.y + faceBounds.height / 2 : maskPos.y;
+  const currentY = faceBounds
+    ? faceBounds.y + faceBounds.height / 2
+    : maskPos.y;
   const widthPerc = faceBounds ? faceBounds.width * 1.5 : 20; // fallback relative width ~20%
   const heightPerc = faceBounds ? faceBounds.height * 1.5 : 25;
   const showMask = !!faceBounds || isHovering;
@@ -839,11 +1470,11 @@ export default function HackerCamera() {
           exit={{ opacity: 0, scale: 1.2 }}
           transition={{ type: "spring", stiffness: 300, damping: 20 }}
           className="absolute pointer-events-none z-20 flex items-center justify-center -translate-x-1/2 -translate-y-1/2"
-          style={{ 
-            left: `${currentX}%`, 
-            top: `${currentY}%`, 
-            width: `${widthPerc}%`, 
-            height: `${heightPerc}%` 
+          style={{
+            left: `${currentX}%`,
+            top: `${currentY}%`,
+            width: `${widthPerc}%`,
+            height: `${heightPerc}%`,
           }}
         >
           {/* Main Bounding Container */}
@@ -854,19 +1485,23 @@ export default function HackerCamera() {
 
           {/* AI Eye Ocular Focus Tracker */}
           <div className="absolute top-[35%] left-[28%] -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
-             <div className="w-5 h-5 border border-dashed border-emerald-400 rounded-full animate-spin duration-7000" />
-             <div className="absolute w-1 h-1 bg-emerald-400 rounded-full" />
-             <span className="absolute -top-3.5 text-[5px] font-mono text-emerald-400 bg-black/70 px-0.5 tracking-tighter">L_PUPIL</span>
+            <div className="w-5 h-5 border border-dashed border-emerald-400 rounded-full animate-spin duration-7000" />
+            <div className="absolute w-1 h-1 bg-emerald-400 rounded-full" />
+            <span className="absolute -top-3.5 text-[5px] font-mono text-emerald-400 bg-black/70 px-0.5 tracking-tighter">
+              L_PUPIL
+            </span>
           </div>
           <div className="absolute top-[35%] right-[28%] translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
-             <div className="w-5 h-5 border border-dashed border-emerald-400 rounded-full animate-spin duration-7000" />
-             <div className="absolute w-1 h-1 bg-emerald-400 rounded-full" />
-             <span className="absolute -top-3.5 text-[5px] font-mono text-emerald-400 bg-black/70 px-0.5 tracking-tighter">R_PUPIL</span>
+            <div className="w-5 h-5 border border-dashed border-emerald-400 rounded-full animate-spin duration-7000" />
+            <div className="absolute w-1 h-1 bg-emerald-400 rounded-full" />
+            <span className="absolute -top-3.5 text-[5px] font-mono text-emerald-400 bg-black/70 px-0.5 tracking-tighter">
+              R_PUPIL
+            </span>
           </div>
 
           {/* Nose targeting reticle */}
           <div className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-[1px] bg-brand-yellow/60">
-             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[1px] h-4 bg-brand-yellow/60" />
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[1px] h-4 bg-brand-yellow/60" />
           </div>
 
           {/* Top Stamp Label with Custom Agent Identity Name */}
@@ -880,8 +1515,12 @@ export default function HackerCamera() {
           {/* Bottom Stamp Label with Classification telemetry */}
           <div className="absolute -bottom-7 left-0 bg-black/90 text-brand-red text-[8px] uppercase font-mono px-2 py-0.5 tracking-wider border border-brand-red/30 whitespace-nowrap flex items-center gap-1.5 rounded-sm">
             <span>CLASS: SUBJECT_AGNT</span>
-            <span className="text-zinc-400 border-l border-neutral-800/40 pl-1.5">CONF: 99.82%</span>
-            <span className="text-emerald-400 border-l border-neutral-800/40 pl-1.5 animate-pulse">LOCK_V2</span>
+            <span className="text-zinc-400 border-l border-neutral-800/40 pl-1.5">
+              CONF: 99.82%
+            </span>
+            <span className="text-emerald-400 border-l border-neutral-800/40 pl-1.5 animate-pulse">
+              LOCK_V2
+            </span>
           </div>
 
           {/* Corner Brackets mapping to face bounds bounding box */}
@@ -889,7 +1528,7 @@ export default function HackerCamera() {
           <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-brand-yellow" />
           <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-brand-yellow" />
           <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-brand-yellow" />
-          
+
           <div className="absolute -bottom-11 right-0 text-[7px] font-mono font-black text-brand-yellow bg-black/80 px-1 whitespace-nowrap border border-neutral-900 rounded-sm">
             CALIP: X{currentX.toFixed(0)} Y{currentY.toFixed(0)}
           </div>
@@ -899,10 +1538,13 @@ export default function HackerCamera() {
   );
 
   return (
-    <section ref={containerRef} id="hacker-cam" className="relative py-20 bg-black border-t-8 border-brand-red text-white flex flex-col items-center">
+    <section
+      ref={containerRef}
+      id="hacker-cam"
+      className="relative py-20 bg-black border-t-8 border-brand-red text-white flex flex-col items-center"
+    >
       <FullscreenBtn targetRef={containerRef} />
       <div className="w-full max-w-6xl px-4 flex flex-col animate-fadeIn">
-        
         {/* Title Block */}
         <div className="mb-10 text-center md:text-left relative">
           <div className="absolute top-0 left-0 w-24 h-1 bg-brand-red" />
@@ -913,7 +1555,9 @@ export default function HackerCamera() {
             Cyber Webc<span className="text-brand-red">am Node</span>
           </h2>
           <p className="text-neutral-400 font-mono text-xs md:text-sm max-w-3xl uppercase">
-            Start your sensor grid dynamically. Seamlessly switch between active webcams or a virtual AI wireframe headpiece. Capture your identity credentials watermarked with Gurnoor's site.
+            Start your sensor grid dynamically. Seamlessly switch between active
+            webcams or a virtual AI wireframe headpiece. Capture your identity
+            credentials watermarked with Gurnoor's site.
           </p>
         </div>
 
@@ -922,7 +1566,9 @@ export default function HackerCamera() {
           <div className="mb-6 p-4 bg-zinc-950 border-l-4 border-brand-yellow text-zinc-300 font-mono text-[11px] leading-relaxed uppercase rounded flex items-start gap-3">
             <Cpu className="w-5 h-5 text-brand-yellow shrink-0 mt-0.5 animate-pulse" />
             <div>
-              <span className="font-bold text-brand-yellow block">SYSTEM FALLBACK SUCCESSFUL</span>
+              <span className="font-bold text-brand-yellow block">
+                SYSTEM FALLBACK SUCCESSFUL
+              </span>
               {errorMessage}
             </div>
           </div>
@@ -930,29 +1576,35 @@ export default function HackerCamera() {
 
         {/* Dynamic Grid split */}
         <div className="grid grid-cols-12 gap-6 items-stretch">
-          
           {/* Main Visual Terminal Area */}
           <div className="col-span-12 lg:col-span-8 flex flex-col">
             <div className="bg-zinc-950 border-4 border-brand-red rounded p-3 md:p-5 shadow-[8px_8px_0px_rgba(255,0,0,0.1)] flex flex-col justify-between h-full relative overflow-hidden">
-              
               {/* Telemetry labels bar */}
               <div className="flex flex-wrap items-center justify-between border-b border-neutral-900 pb-3 mb-4 font-mono text-[10px] uppercase text-zinc-400 gap-2">
                 <div className="flex items-center gap-2">
-                  <span className={`w-2.5 h-2.5 rounded-full ${cameraState === "active" ? "bg-brand-red animate-ping" : "bg-neutral-800"}`} />
+                  <span
+                    className={`w-2.5 h-2.5 rounded-full ${cameraState === "active" ? "bg-brand-red animate-ping" : "bg-neutral-800"}`}
+                  />
                   <span className="text-white font-black">
                     FEED: {cameraState} {isVirtual && "(AI_SIMULATION)"}
                   </span>
                 </div>
                 <div className="hidden sm:flex gap-4">
-                  <span>LOC: <span className="text-brand-yellow">{telemetry.ip}</span></span>
-                  <span>TIC: <span className="text-brand-red">{tickerText}</span></span>
-                  <span>FPS: <span className="text-white">{telemetry.fps}</span></span>
+                  <span>
+                    LOC:{" "}
+                    <span className="text-brand-yellow">{telemetry.ip}</span>
+                  </span>
+                  <span>
+                    TIC: <span className="text-brand-red">{tickerText}</span>
+                  </span>
+                  <span>
+                    FPS: <span className="text-white">{telemetry.fps}</span>
+                  </span>
                 </div>
               </div>
 
               {/* Central frame viewer ratio */}
               <div className="aspect-video w-full bg-black border-2 border-neutral-900 rounded relative overflow-hidden flex items-center justify-center">
-                
                 {/* Captured flash layer effect */}
                 <AnimatePresence>
                   {isFlashing && (
@@ -975,7 +1627,9 @@ export default function HackerCamera() {
                         AI MONITOR STAGE READY
                       </span>
                       <p className="text-[10px] text-neutral-500 max-w-sm uppercase font-mono leading-relaxed">
-                        To lock credentials, click to initiate your camera stream or initiate screen-capture to analyze what you are looking at in real-time.
+                        To lock credentials, click to initiate your camera
+                        stream or initiate screen-capture to analyze what you
+                        are looking at in real-time.
                       </p>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-3">
@@ -1012,8 +1666,8 @@ export default function HackerCamera() {
 
                 {/* Webcam or Screen real video feed elements */}
                 {cameraState === "active" && !isVirtual && !capturedImage && (
-                  <div 
-                    className="relative w-full h-full cursor-crosshair overflow-hidden" 
+                  <div
+                    className="relative w-full h-full cursor-crosshair overflow-hidden"
                     onMouseMove={handleMouseMove}
                     onMouseEnter={() => setIsHovering(true)}
                     onMouseLeave={() => setIsHovering(false)}
@@ -1027,14 +1681,20 @@ export default function HackerCamera() {
                       className={`absolute inset-0 w-full h-full object-cover ${feedType === "screen" ? "" : "scale-x-[-1]"}`}
                       style={getFilterStyle(activeFilter)}
                     />
-                    
+                    <canvas
+                      ref={handsCanvasRef}
+                      className="absolute inset-0 w-full h-full object-cover pointer-events-none z-10"
+                    />
+
                     {/* Cyber overlay elements */}
                     <div className="absolute inset-0 border-2 border-brand-red/35 pointer-events-none p-4 flex flex-col justify-between">
                       <div className="flex justify-between text-brand-red font-mono text-[9px] font-bold">
-                        <span>[ FEED_SOURCE_SECURE: {feedType.toUpperCase()} ]</span>
+                        <span>
+                          [ FEED_SOURCE_SECURE: {feedType.toUpperCase()} ]
+                        </span>
                         <span>[ ATTENTION_AI_HUD ]</span>
                       </div>
-                      
+
                       {/* Technical targeting crosshair */}
                       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
                         <div className="w-12 h-12 border border-dashed border-brand-yellow rounded-full animate-spin duration-7000" />
@@ -1057,7 +1717,7 @@ export default function HackerCamera() {
 
                 {/* Virtual Biometric Face & Screen Scanner Canvas */}
                 {cameraState === "active" && isVirtual && !capturedImage && (
-                  <div 
+                  <div
                     className="relative w-full h-full cursor-crosshair overflow-hidden"
                     onMouseMove={handleMouseMove}
                     onMouseEnter={() => setIsHovering(true)}
@@ -1105,7 +1765,6 @@ export default function HackerCamera() {
                     </div>
                   </div>
                 )}
-
               </div>
 
               {/* Control Deck Action Buttons */}
@@ -1154,30 +1813,30 @@ export default function HackerCamera() {
                     <span className="font-mono text-[9px] text-neutral-500 uppercase px-2 font-bold select-none hidden sm:inline">
                       COLOR ROUTER:
                     </span>
-                    {(["cyber", "matrix", "thermal", "none"] as const).map((filter) => (
-                      <button
-                        key={filter}
-                        onClick={() => setActiveFilter(filter)}
-                        className={`text-[9px] font-mono uppercase px-2 py-1 rounded transition-all font-bold ${
-                          activeFilter === filter
-                            ? "bg-brand-red text-white"
-                            : "text-neutral-400 hover:text-white"
-                        }`}
-                      >
-                        {filter}
-                      </button>
-                    ))}
+                    {(["cyber", "matrix", "thermal", "none"] as const).map(
+                      (filter) => (
+                        <button
+                          key={filter}
+                          onClick={() => setActiveFilter(filter)}
+                          className={`text-[9px] font-mono uppercase px-2 py-1 rounded transition-all font-bold ${
+                            activeFilter === filter
+                              ? "bg-brand-red text-white"
+                              : "text-neutral-400 hover:text-white"
+                          }`}
+                        >
+                          {filter}
+                        </button>
+                      ),
+                    )}
                   </div>
                 )}
               </div>
-
             </div>
           </div>
 
           {/* Right Information Legend Panel */}
           <div className="col-span-12 lg:col-span-4 flex flex-col justify-between">
             <div className="bg-zinc-950 border-4 border-brand-yellow rounded p-6 flex flex-col justify-between h-full shadow-[8px_8px_0px_rgba(255,215,0,0.08)]">
-              
               <div>
                 <span className="font-mono text-[9px] text-brand-yellow font-black uppercase mb-4 block tracking-widest border-b border-neutral-900 pb-2">
                   SECURE BADGE SPECIFICATION
@@ -1191,7 +1850,13 @@ export default function HackerCamera() {
                   <input
                     type="text"
                     value={customName}
-                    onChange={(e) => setCustomName(e.target.value.replace(/[^a-zA-Z0-9_\-\s]/g, "").substring(0, 22))}
+                    onChange={(e) =>
+                      setCustomName(
+                        e.target.value
+                          .replace(/[^a-zA-Z0-9_\-\s]/g, "")
+                          .substring(0, 22),
+                      )
+                    }
                     placeholder="ENTER NAME..."
                     className="w-full bg-black border border-neutral-800 focus:border-brand-yellow px-3 py-2 rounded text-xs text-white uppercase outline-none font-mono tracking-widest transition-all"
                   />
@@ -1210,7 +1875,8 @@ export default function HackerCamera() {
                       creepyroot.github.io/gurnoorsingh
                     </p>
                     <p className="text-[9px] text-neutral-500 mt-1">
-                      Rendered on the raster layer of both digital models and live camera snapshots.
+                      Rendered on the raster layer of both digital models and
+                      live camera snapshots.
                     </p>
                   </div>
 
@@ -1219,7 +1885,11 @@ export default function HackerCamera() {
                       Certified Credentials
                     </span>
                     <p className="text-[10px]">
-                      Watermarked with <span className="text-brand-red">"CREEPYROOT // CYBER SECURITY"</span> to establish system authorization credentials.
+                      Watermarked with{" "}
+                      <span className="text-brand-red">
+                        "CREEPYROOT // CYBER SECURITY"
+                      </span>{" "}
+                      to establish system authorization credentials.
                     </p>
                   </div>
 
@@ -1228,7 +1898,8 @@ export default function HackerCamera() {
                       Shader Options
                     </span>
                     <p className="text-[10px]">
-                      Switch filters to match different terminal outputs: Cyber-Red, Emerald-Matrix, or Thermal ranges.
+                      Switch filters to match different terminal outputs:
+                      Cyber-Red, Emerald-Matrix, or Thermal ranges.
                     </p>
                   </div>
                 </div>
@@ -1239,18 +1910,21 @@ export default function HackerCamera() {
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-5 h-5 text-brand-yellow shrink-0" />
                   <div>
-                    <span className="text-[8px] text-zinc-500 block">ENCRYPTION LEVEL</span>
-                    <span className="text-white font-black text-[10px]">GURNOOR_AI_APPROVED</span>
+                    <span className="text-[8px] text-zinc-500 block">
+                      ENCRYPTION LEVEL
+                    </span>
+                    <span className="text-white font-black text-[10px]">
+                      GURNOOR_AI_APPROVED
+                    </span>
                   </div>
                 </div>
-                <span className="text-brand-yellow font-black animate-pulse">SYSTEM SECURE</span>
+                <span className="text-brand-yellow font-black animate-pulse">
+                  SYSTEM SECURE
+                </span>
               </div>
-
             </div>
           </div>
-
         </div>
-
       </div>
 
       {/* Hidden high-res compiler canvas */}

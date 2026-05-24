@@ -1,30 +1,30 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700;950&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700;950&display=swap");
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Inter", "Helvetica Neue", Arial, sans-serif;
   --font-display: "Space Grotesk", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
-  --color-brand-red: #FF0000;
-  --color-brand-yellow: #FFD700;
+  --color-brand-red: #ff0000;
+  --color-brand-yellow: #ffd700;
 }
 
 @layer utilities {
   /* Yellow and red scanlines, noise, blinkers */
   .cyber-grid {
-    background-image: 
+    background-image:
       linear-gradient(rgba(255, 215, 0, 0.05) 1px, transparent 1px),
       linear-gradient(90deg, rgba(255, 215, 0, 0.05) 1px, transparent 1px);
     background-size: 32px 32px;
   }
-  
+
   .hazard-bg {
     background: repeating-linear-gradient(
       -45deg,
       #000000,
       #000000 8px,
-      #FFD700 8px,
-      #FFD700 16px
+      #ffd700 8px,
+      #ffd700 16px
     );
   }
 
@@ -33,8 +33,8 @@
       -45deg,
       #000000,
       #000000 8px,
-      #FF0000 8px,
-      #FF0000 16px
+      #ff0000 8px,
+      #ff0000 16px
     );
   }
 
@@ -45,27 +45,48 @@
   .text-glow-red {
     text-shadow: 0 0 15px rgba(255, 0, 0, 0.7);
   }
-  
+
   .border-cyber-glow {
     box-shadow: 0 0 20px rgba(255, 215, 0, 0.25);
   }
 
   @keyframes textGlitch {
-    0% { transform: translate(0) }
-    20% { transform: translate(-3px, 3px) }
-    40% { transform: translate(-3px, -3px) }
-    60% { transform: translate(3px, 3px) }
-    80% { transform: translate(3px, -3px) }
-    100% { transform: translate(0) }
+    0% {
+      transform: translate(0);
+    }
+    20% {
+      transform: translate(-3px, 3px);
+    }
+    40% {
+      transform: translate(-3px, -3px);
+    }
+    60% {
+      transform: translate(3px, 3px);
+    }
+    80% {
+      transform: translate(3px, -3px);
+    }
+    100% {
+      transform: translate(0);
+    }
   }
   .animate-glitch {
-    animation: textGlitch 0.2s cubic-bezier(.25, .46, .45, .94) both infinite;
+    animation: textGlitch 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) both
+      infinite;
   }
 
   @keyframes laserSweep {
-    0% { transform: translateY(-10vh); opacity: 0.9; }
-    50% { opacity: 1; }
-    100% { transform: translateY(110vh); opacity: 0; }
+    0% {
+      transform: translateY(-10vh);
+      opacity: 0.9;
+    }
+    50% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(110vh);
+      opacity: 0;
+    }
   }
   .animate-laser-sweep {
     animation: laserSweep 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -80,14 +101,15 @@
   background: #000;
 }
 ::-webkit-scrollbar-thumb {
-  background: #FF0000; /* red thumb */
+  background: #ff0000; /* red thumb */
   border: 1px solid #000;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #FFD700; /* yellow on hover */
+  background: #ffd700; /* yellow on hover */
 }
 
-html, body {
+html,
+body {
   background-color: #000;
   color: #fff;
   overflow-x: hidden;

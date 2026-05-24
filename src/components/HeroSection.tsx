@@ -20,23 +20,28 @@ export default function HeroSection() {
     if (!ctx) return;
 
     let animationFrameId: number;
-    let width = (canvas.width = canvas.parentElement?.clientWidth || window.innerWidth);
+    let width = (canvas.width =
+      canvas.parentElement?.clientWidth || window.innerWidth);
     let height = (canvas.height = 700);
 
     const handleResize = () => {
       if (!canvas) return;
-      width = canvas.width = canvas.parentElement?.clientWidth || window.innerWidth;
+      width = canvas.width =
+        canvas.parentElement?.clientWidth || window.innerWidth;
       height = canvas.height = 700;
     };
     window.addEventListener("resize", handleResize);
 
     // Characters for digital rain
-    const chars = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン1234567890ABCDEF@#$%-+*=";
+    const chars =
+      "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン1234567890ABCDEF@#$%-+*=";
     const charArray = chars.split("");
 
     const fontSize = 14;
     const columns = Math.floor(width / fontSize) + 1;
-    const drops: number[] = Array(columns).fill(0).map(() => Math.floor(Math.random() * -100));
+    const drops: number[] = Array(columns)
+      .fill(0)
+      .map(() => Math.floor(Math.random() * -100));
 
     const draw = () => {
       // Semi-transparent background to create trail effect
@@ -45,7 +50,7 @@ export default function HeroSection() {
 
       for (let i = 0; i < drops.length; i++) {
         const text = charArray[Math.floor(Math.random() * charArray.length)];
-        
+
         // Randomly choose between cybersecurity yellow/amber and target red
         const isRed = Math.random() < 0.15;
         ctx.fillStyle = isRed ? "#ef4444" : "#facc15";
@@ -69,7 +74,12 @@ export default function HeroSection() {
 
     // Rotate quick threat simulator
     const alertInterval = setInterval(() => {
-      const dangerStates = ["SECURE", "WARNING: PORT SCAN DETECTED", "ACTIVE AUDIT IN PROGRESS", "LEVEL 4 CLEARAPPED"];
+      const dangerStates = [
+        "SECURE",
+        "WARNING: PORT SCAN DETECTED",
+        "ACTIVE AUDIT IN PROGRESS",
+        "LEVEL 4 CLEARAPPED",
+      ];
       const messages = [
         "AUDITING STACK INTEGRITY...",
         "BUG EXPULSION SEQUENCE ARMED...",
@@ -77,10 +87,11 @@ export default function HeroSection() {
         "AI COPILOT AGENT LINKED AND STABILIZED...",
         "THREAT SHIELD ACTIVE (99.8% RESILIENT)",
       ];
-      
-      const randomState = dangerStates[Math.floor(Math.random() * dangerStates.length)];
+
+      const randomState =
+        dangerStates[Math.floor(Math.random() * dangerStates.length)];
       setThreatLevel(randomState);
-      
+
       const randomMsg = messages[Math.floor(Math.random() * messages.length)];
       setSystemAlerts((prev) => [randomMsg, prev[0], prev[1]].slice(0, 3));
     }, 4500);
@@ -102,7 +113,7 @@ export default function HeroSection() {
   const personal = portfolioData.personalInfo;
 
   return (
-    <section 
+    <section
       id="hero"
       className="relative min-h-[720px] h-[92vh] flex flex-col justify-between bg-black overflow-hidden border-b-[16px] border-brand-red select-none cursor-crosshair"
     >
@@ -119,7 +130,7 @@ export default function HeroSection() {
       </div>
 
       {/* Parallax layered backgrounds */}
-      <motion.div 
+      <motion.div
         className="absolute inset-0 z-0 pointer-events-none opacity-35"
         style={{ y: backgroundY }}
       >
@@ -160,14 +171,12 @@ export default function HeroSection() {
 
       {/* Main typography stack with scroll parallax */}
       <div className="flex-1 flex flex-col justify-center items-start px-6 md:px-16 lg:px-28 relative z-25">
-        
         {/* Dynamic scanning line overlay */}
         <div className="absolute left-0 right-0 h-0.5 bg-brand-yellow/20 shadow-md shadow-brand-yellow top-1/4 animate-bounce pointer-events-none" />
 
         <motion.div style={{ y: textY }} className="max-w-4xl">
-          
           <div className="flex flex-wrap items-center gap-3">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, x: -30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8 }}
@@ -188,15 +197,13 @@ export default function HeroSection() {
           </div>
 
           {/* Large display name styling - Custom text strokes and mega solid shadows */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.7, delay: 0.2 }}
             className="relative mt-8"
           >
-            <h1 
-              className="text-6xl sm:text-7xl md:text-8xl lg:text-[130px] font-display font-black tracking-tighter text-brand-red select-none leading-[0.85] uppercase italic drop-shadow-[8px_8px_0px_#FFD700]"
-            >
+            <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-[130px] font-display font-black tracking-tighter text-brand-red select-none leading-[0.85] uppercase italic drop-shadow-[8px_8px_0px_#FFD700]">
               GURNOOR
               <br />
               <span className="text-white drop-shadow-[8px_8px_0px_#FF0000]">
@@ -209,19 +216,21 @@ export default function HeroSection() {
           </motion.div>
 
           {/* Subtitle taglines */}
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
             className="mt-8 text-brand-yellow font-mono text-sm sm:text-xl tracking-widest font-black max-w-2xl uppercase flex flex-wrap items-center gap-x-2"
           >
-            <span>ETHICAL HACKER</span> <span className="text-brand-red font-black">•</span>
-            <span>AI DEVELOPER</span> <span className="text-brand-red font-black">•</span>
+            <span>ETHICAL HACKER</span>{" "}
+            <span className="text-brand-red font-black">•</span>
+            <span>AI DEVELOPER</span>{" "}
+            <span className="text-brand-red font-black">•</span>
             <span>DESIGNER THINKER</span>
           </motion.p>
 
           {/* Quote block */}
-          <motion.blockquote 
+          <motion.blockquote
             initial={{ opacity: 0 }}
             animate={{ opacity: 0.85 }}
             transition={{ duration: 1.2, delay: 0.6 }}
@@ -231,19 +240,19 @@ export default function HeroSection() {
           </motion.blockquote>
 
           {/* Quick buttons */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.8 }}
             className="mt-10 flex flex-wrap gap-4"
           >
-            <a 
+            <a
               href="#terminal"
               className="px-6 py-3 bg-brand-yellow hover:bg-yellow-500 text-black font-mono font-black text-xs uppercase tracking-widest border-2 border-black transition-all rounded shadow-[5px_5px_0px_#FF0000] active:translate-y-1 active:shadow-[1px_1px_0px_#FF0000]"
             >
               INITIATE SEC-AUDIT
             </a>
-            <a 
+            <a
               href="#contact"
               className="px-6 py-3 bg-black hover:bg-neutral-900 text-brand-red font-mono font-black text-xs uppercase tracking-widest border-2 border-brand-red transition-all rounded shadow-[5px_5px_0px_#FFD700] active:translate-y-1 active:shadow-[1px_1px_0px_#FFD700]"
             >
@@ -254,7 +263,7 @@ export default function HeroSection() {
       </div>
 
       {/* Cyber diagnostics right panel HUD */}
-      <motion.div 
+      <motion.div
         className="absolute right-0 bottom-24 w-80 hidden md:flex flex-col p-4 bg-neutral-950/90 border-2 border-neutral-800 rounded-sm font-mono text-[10px] space-y-3 z-30 shadow-2xl mr-6"
         style={{ y: overlayY }}
       >
@@ -281,9 +290,14 @@ export default function HeroSection() {
         </div>
 
         <div className="border-t border-neutral-800 pt-2 space-y-1.5 text-neutral-400">
-          <span className="text-[9px] text-[#facc15] font-bold block">CONSOLE LOGS:</span>
+          <span className="text-[9px] text-[#facc15] font-bold block">
+            CONSOLE LOGS:
+          </span>
           {systemAlerts.map((log, idx) => (
-            <div key={idx} className="truncate text-glow-yellow leading-tight text-[9px]">
+            <div
+              key={idx}
+              className="truncate text-glow-yellow leading-tight text-[9px]"
+            >
               &gt; {log}
             </div>
           ))}
@@ -304,7 +318,9 @@ export default function HeroSection() {
             <span>● RED TEAM DISCLOSURES APPLIED</span>
             <span>● PENETRATION RESILIENT UI</span>
             <span>● DESIGN THOUGHT PROCESS EXPLOITED</span>
-            <span>● BUG BOUNTY DISCLOSER TO GOOGLE, TESLA, MICROSOFT, APPLE & TINDER</span>
+            <span>
+              ● BUG BOUNTY DISCLOSER TO GOOGLE, TESLA, MICROSOFT, APPLE & TINDER
+            </span>
             <span>● ARTIFICIAL INTELLIGENCE PIPELINES ONLINE</span>
           </div>
           <div className="animate-marquee flex gap-12 select-none uppercase absolute top-1.5 left-full">
@@ -312,7 +328,9 @@ export default function HeroSection() {
             <span>● RED TEAM DISCLOSURES APPLIED</span>
             <span>● PENETRATION RESILIENT UI</span>
             <span>● DESIGN THOUGHT PROCESS EXPLOITED</span>
-            <span>● BUG BOUNTY DISCLOSER TO GOOGLE, TESLA, MICROSOFT, APPLE & TINDER</span>
+            <span>
+              ● BUG BOUNTY DISCLOSER TO GOOGLE, TESLA, MICROSOFT, APPLE & TINDER
+            </span>
             <span>● ARTIFICIAL INTELLIGENCE PIPELINES ONLINE</span>
           </div>
         </div>

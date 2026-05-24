@@ -1,50 +1,54 @@
 let audioCtx: AudioContext | null = null;
 const getCtx = () => {
   if (!audioCtx) {
-    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    audioCtx = new (
+      window.AudioContext || (window as any).webkitAudioContext
+    )();
   }
-  if (audioCtx.state === 'suspended') {
+  if (audioCtx.state === "suspended") {
     audioCtx.resume();
   }
   return audioCtx;
 };
 
-export const playSound = (type: 'beep' | 'shoot' | 'explosion' | 'win' | 'lose' | 'hit') => {
+export const playSound = (
+  type: "beep" | "shoot" | "explosion" | "win" | "lose" | "hit",
+) => {
   try {
     const ctx = getCtx();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
     gain.connect(ctx.destination);
-    
+
     const t = ctx.currentTime;
-    
-    if (type === 'beep') {
-      osc.type = 'sine';
+
+    if (type === "beep") {
+      osc.type = "sine";
       osc.frequency.setValueAtTime(440, t);
       osc.frequency.exponentialRampToValueAtTime(880, t + 0.1);
       gain.gain.setValueAtTime(0.1, t);
       gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
       osc.start(t);
       osc.stop(t + 0.1);
-    } else if (type === 'shoot') {
-      osc.type = 'square';
+    } else if (type === "shoot") {
+      osc.type = "square";
       osc.frequency.setValueAtTime(880, t);
       osc.frequency.exponentialRampToValueAtTime(110, t + 0.1);
       gain.gain.setValueAtTime(0.1, t);
       gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
       osc.start(t);
       osc.stop(t + 0.1);
-    } else if (type === 'explosion') {
-      osc.type = 'sawtooth';
+    } else if (type === "explosion") {
+      osc.type = "sawtooth";
       osc.frequency.setValueAtTime(100, t);
       osc.frequency.exponentialRampToValueAtTime(0.01, t + 0.3);
       gain.gain.setValueAtTime(0.2, t);
       gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
       osc.start(t);
       osc.stop(t + 0.3);
-    } else if (type === 'win') {
-      osc.type = 'triangle';
+    } else if (type === "win") {
+      osc.type = "triangle";
       osc.frequency.setValueAtTime(440, t);
       osc.frequency.setValueAtTime(554.37, t + 0.1);
       osc.frequency.setValueAtTime(659.25, t + 0.2);
@@ -53,16 +57,16 @@ export const playSound = (type: 'beep' | 'shoot' | 'explosion' | 'win' | 'lose' 
       gain.gain.linearRampToValueAtTime(0, t + 0.5);
       osc.start(t);
       osc.stop(t + 0.5);
-    } else if (type === 'lose') {
-      osc.type = 'sawtooth';
+    } else if (type === "lose") {
+      osc.type = "sawtooth";
       osc.frequency.setValueAtTime(300, t);
       osc.frequency.exponentialRampToValueAtTime(50, t + 0.5);
       gain.gain.setValueAtTime(0.1, t);
       gain.gain.linearRampToValueAtTime(0, t + 0.5);
       osc.start(t);
       osc.stop(t + 0.5);
-    } else if (type === 'hit') {
-      osc.type = 'triangle';
+    } else if (type === "hit") {
+      osc.type = "triangle";
       osc.frequency.setValueAtTime(150, t);
       osc.frequency.exponentialRampToValueAtTime(50, t + 0.1);
       gain.gain.setValueAtTime(0.1, t);
@@ -76,11 +80,11 @@ export const playSound = (type: 'beep' | 'shoot' | 'explosion' | 'win' | 'lose' 
 };
 
 export const soundEngine = {
-  error: () => playSound('lose'),
-  eat: () => playSound('beep'),
-  success: () => playSound('win'),
-  explosion: () => playSound('explosion'),
-  shoot: () => playSound('shoot'),
+  error: () => playSound("lose"),
+  eat: () => playSound("beep"),
+  success: () => playSound("win"),
+  explosion: () => playSound("explosion"),
+  shoot: () => playSound("shoot"),
   playTone: (freq: number, type: any, dur: number, vol: number) => {
     try {
       const ctx = getCtx();
@@ -95,7 +99,7 @@ export const soundEngine = {
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + dur);
     } catch {}
-  }
+  },
 };
 
 // Auto unlock WebAudio on mobile browsers on first interaction

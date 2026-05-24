@@ -6,7 +6,10 @@ interface Scroll3DEntranceProps {
   className?: string;
 }
 
-export default function Scroll3DEntrance({ children, className = "" }: Scroll3DEntranceProps) {
+export default function Scroll3DEntrance({
+  children,
+  className = "",
+}: Scroll3DEntranceProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -18,7 +21,7 @@ export default function Scroll3DEntrance({ children, className = "" }: Scroll3DE
     window.addEventListener("resize", checkScreen);
     return () => window.removeEventListener("resize", checkScreen);
   }, []);
-  
+
   // Track scroll from when the element starts entering from the bottom (start end)
   // to when its top reaches 65% of the viewport (start 65%).
   // This guarantees it is fully locked on and in perfect size/shape early as you scroll!
@@ -37,26 +40,39 @@ export default function Scroll3DEntrance({ children, className = "" }: Scroll3DE
 
   // Elegant front-coming subtle 2.5D parallax offsets.
   // Highly optimized values prevent rendering bottlenecks and scrolling stutters on all machines.
-  const scale = useTransform(smoothProgress, [0, 1], [isMobile ? 1.01 : 1.03, 1]);
+  const scale = useTransform(
+    smoothProgress,
+    [0, 1],
+    [isMobile ? 1.01 : 1.03, 1],
+  );
   const rotateX = useTransform(smoothProgress, [0, 1], [isMobile ? -1 : -3, 0]);
-  const translateZ = useTransform(smoothProgress, [0, 1], [isMobile ? 10 : 25, 0]);
+  const translateZ = useTransform(
+    smoothProgress,
+    [0, 1],
+    [isMobile ? 10 : 25, 0],
+  );
   const y = useTransform(smoothProgress, [0, 1], [isMobile ? 10 : 20, 0]);
   const opacity = useTransform(smoothProgress, [0, 0.45], [0, 1]);
-  const pointerEvents = useTransform(smoothProgress, (val) => (val < 0.2 ? "none" : "auto"));
+  const pointerEvents = useTransform(smoothProgress, (val) =>
+    val < 0.2 ? "none" : "auto",
+  );
 
   // On mobile frames or touch-based screen widths, render the children directly with static layout.
   // This avoids scroll-frame sync errors in embeds, saving performance and preventing elements from remaining invisible.
   if (isMobile) {
     return (
-      <div id="static-mobile-contain" className={`w-full py-4 px-2 md:py-6 overflow-visible ${className}`}>
+      <div
+        id="static-mobile-contain"
+        className={`w-full py-4 px-2 md:py-6 overflow-visible ${className}`}
+      >
         {children}
       </div>
     );
   }
 
   return (
-    <div 
-      ref={ref} 
+    <div
+      ref={ref}
       className={`w-full overflow-visible py-8 md:py-12 ${className}`}
       style={{ perspective: "1200px", perspectiveOrigin: "center center" }}
     >

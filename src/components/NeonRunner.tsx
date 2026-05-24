@@ -9,11 +9,15 @@ const CANVAS_H = 400;
 export default function NeonRunner() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [gameState, setGameState] = useState<"idle" | "playing" | "gameover">("idle");
+  const [gameState, setGameState] = useState<"idle" | "playing" | "gameover">(
+    "idle",
+  );
   const [score, setScore] = useState(0);
-  
+
   const player = useRef({ y: 300, dy: 0, w: 30, h: 40, isJumping: false });
-  const obstacles = useRef<{x: number, y: number, w: number, h: number}[]>([]);
+  const obstacles = useRef<{ x: number; y: number; w: number; h: number }[]>(
+    [],
+  );
   const frameRef = useRef(0);
   const speed = useRef(5);
 
@@ -21,7 +25,7 @@ export default function NeonRunner() {
     if (!player.current.isJumping && gameState === "playing") {
       player.current.dy = -15;
       player.current.isJumping = true;
-      playSound('shoot');
+      playSound("shoot");
     }
   };
 
@@ -44,14 +48,14 @@ export default function NeonRunner() {
     player.current = { y: 300, dy: 0, w: 30, h: 40, isJumping: false };
     obstacles.current = [];
     speed.current = 5;
-    playSound('beep');
+    playSound("beep");
   };
 
   const draw = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
-    if(!ctx) return;
+    if (!ctx) return;
 
     ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
     ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
@@ -73,7 +77,7 @@ export default function NeonRunner() {
     // Obstacles
     ctx.fillStyle = "#FF0000";
     ctx.shadowColor = "#FF0000";
-    obstacles.current.forEach(ob => {
+    obstacles.current.forEach((ob) => {
       ctx.fillRect(ob.x, ob.y, ob.w, ob.h);
     });
     ctx.shadowBlur = 0;
@@ -93,42 +97,45 @@ export default function NeonRunner() {
     }
 
     // Spawn Obstacles
-    if (Math.random() < 0.01 + (speed.current * 0.002) && obstacles.current.length < 3) {
-       // Only spawn if last obstacle is far enough
-       const last = obstacles.current[obstacles.current.length - 1];
-       if (!last || last.x < CANVAS_W - 300) {
-         obstacles.current.push({
-           x: CANVAS_W,
-           y: 340 - 40, // Height 40
-           w: 20,
-           h: 40
-         });
-       }
+    if (
+      Math.random() < 0.01 + speed.current * 0.002 &&
+      obstacles.current.length < 3
+    ) {
+      // Only spawn if last obstacle is far enough
+      const last = obstacles.current[obstacles.current.length - 1];
+      if (!last || last.x < CANVAS_W - 300) {
+        obstacles.current.push({
+          x: CANVAS_W,
+          y: 340 - 40, // Height 40
+          w: 20,
+          h: 40,
+        });
+      }
     }
 
     // Move Obstacles & Collision
     for (let i = 0; i < obstacles.current.length; i++) {
-       let ob = obstacles.current[i];
-       ob.x -= speed.current;
+      let ob = obstacles.current[i];
+      ob.x -= speed.current;
 
-       // Collision
-       if (
-         50 < ob.x + ob.w &&
-         50 + player.current.w > ob.x &&
-         player.current.y < ob.y + ob.h &&
-         player.current.y + player.current.h > ob.y
-       ) {
-         setGameState("gameover");
-         playSound('explosion');
-       }
+      // Collision
+      if (
+        50 < ob.x + ob.w &&
+        50 + player.current.w > ob.x &&
+        player.current.y < ob.y + ob.h &&
+        player.current.y + player.current.h > ob.y
+      ) {
+        setGameState("gameover");
+        playSound("explosion");
+      }
     }
 
     // Remove off-screen
-    obstacles.current = obstacles.current.filter(ob => ob.x + ob.w > 0);
+    obstacles.current = obstacles.current.filter((ob) => ob.x + ob.w > 0);
 
     // Increase score and speed
     speed.current += 0.001;
-    setScore(s => s + 1);
+    setScore((s) => s + 1);
   };
 
   const loop = () => {
@@ -149,9 +156,12 @@ export default function NeonRunner() {
   }, [gameState]);
 
   return (
-    <section ref={containerRef} className="relative py-20 bg-neutral-950 font-mono text-white flex flex-col items-center border-t-4 border-fuchsia-500 overflow-hidden min-h-[500px]">
+    <section
+      ref={containerRef}
+      className="relative py-20 bg-neutral-950 font-mono text-white flex flex-col items-center border-t-4 border-fuchsia-500 overflow-hidden min-h-[500px]"
+    >
       <FullscreenBtn targetRef={containerRef} />
-      
+
       <div className="w-full max-w-4xl px-4 relative z-10 flex flex-col items-center">
         <div className="inline-flex items-center gap-2 text-fuchsia-500 font-black tracking-widest text-xs border border-fuchsia-500/30 px-3 py-1 bg-fuchsia-500/10 mb-6">
           <Zap className="w-4 h-4 animate-pulse" />
@@ -159,10 +169,14 @@ export default function NeonRunner() {
         </div>
 
         <div className="text-xl md:text-3xl font-black mb-4 flex justify-between w-full max-w-[800px]">
-           <span className="text-neutral-500">SCORE:</span> <span className="text-fuchsia-500">{score}</span>
+          <span className="text-neutral-500">SCORE:</span>{" "}
+          <span className="text-fuchsia-500">{score}</span>
         </div>
 
-        <div className="relative border-4 border-neutral-900 bg-black p-2 rounded w-full max-w-[800px] shadow-[0_0_30px_rgba(255,0,255,0.15)] flex justify-center cursor-pointer" onClick={jump}>
+        <div
+          className="relative border-4 border-neutral-900 bg-black p-2 rounded w-full max-w-[800px] shadow-[0_0_30px_rgba(255,0,255,0.15)] flex justify-center cursor-pointer"
+          onClick={jump}
+        >
           <canvas
             ref={canvasRef}
             width={CANVAS_W}
@@ -171,26 +185,43 @@ export default function NeonRunner() {
           />
 
           {gameState === "idle" && (
-             <div className="absolute inset-0 z-10 bg-black/60 flex flex-col justify-center items-center backdrop-blur-sm">
-                <button onClick={(e) => { e.stopPropagation(); startGame(); }} className="bg-fuchsia-600 text-white font-black px-8 py-4 uppercase hover:bg-white hover:text-black transition-all flex items-center gap-2">
-                  <Play className="w-5 h-5" /> START RUN
-                </button>
-             </div>
+            <div className="absolute inset-0 z-10 bg-black/60 flex flex-col justify-center items-center backdrop-blur-sm">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  startGame();
+                }}
+                className="bg-fuchsia-600 text-white font-black px-8 py-4 uppercase hover:bg-white hover:text-black transition-all flex items-center gap-2"
+              >
+                <Play className="w-5 h-5" /> START RUN
+              </button>
+            </div>
           )}
 
           {gameState === "gameover" && (
-             <div className="absolute inset-0 z-10 bg-black/80 flex flex-col justify-center items-center backdrop-blur-sm">
-                <div className="text-brand-red font-black text-4xl mb-2">SYSTEM CRASHED</div>
-                <div className="text-white text-xl mb-6">HACK DISTANCE: {score}</div>
-                <button onClick={(e) => { e.stopPropagation(); startGame(); }} className="bg-white text-black font-black px-6 py-3 uppercase hover:bg-fuchsia-600 hover:text-white transition-all flex items-center gap-2">
-                  <RefreshCcw className="w-5 h-5" /> RESTART RUN
-                </button>
-             </div>
+            <div className="absolute inset-0 z-10 bg-black/80 flex flex-col justify-center items-center backdrop-blur-sm">
+              <div className="text-brand-red font-black text-4xl mb-2">
+                SYSTEM CRASHED
+              </div>
+              <div className="text-white text-xl mb-6">
+                HACK DISTANCE: {score}
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  startGame();
+                }}
+                className="bg-white text-black font-black px-6 py-3 uppercase hover:bg-fuchsia-600 hover:text-white transition-all flex items-center gap-2"
+              >
+                <RefreshCcw className="w-5 h-5" /> RESTART RUN
+              </button>
+            </div>
           )}
         </div>
-        
+
         <p className="mt-6 text-neutral-500 uppercase tracking-widest text-[10px]">
-          Tap/Click Canvas or Press SPACE / UP ARROW to Jump. Avoid Red Redactions.
+          Tap/Click Canvas or Press SPACE / UP ARROW to Jump. Avoid Red
+          Redactions.
         </p>
       </div>
     </section>
